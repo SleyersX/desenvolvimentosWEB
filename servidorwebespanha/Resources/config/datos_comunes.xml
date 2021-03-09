@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<SERVIDORES>
+	<SERVER>
+		<ESP>
+			<PRINCIPAL><ALIAS>soporteesp</ALIAS><IP>10.208.162.6</IP></PRINCIPAL>
+			<WEB>
+				<ALIAS>soporteespweb</ALIAS><IP>10.208.162.17</IP>
+				<PAG_INICIO>index.php</PAG_INICIO>
+			</WEB>
+		</ESP>
+
+		<BRA>
+			<PRINCIPAL><ALIAS>soportebra</ALIAS><IP>10.105.186.135</IP></PRINCIPAL>
+			<WEB>
+				<ALIAS>soportebraweb</ALIAS><IP>10.105.186.135</IP>
+				<PAG_INICIO>Resources/monitorizacion.php</PAG_INICIO>
+			</WEB>
+		</BRA>
+
+		<ARG>
+			<PRINCIPAL><ALIAS>soportearg</ALIAS><IP>10.105.186.135</IP></PRINCIPAL>
+			<WEB>
+				<ALIAS>soporteargweb</ALIAS><IP>10.105.186.135</IP>
+				<PAG_INICIO>Resources/monitorizacion.php</PAG_INICIO>
+			</WEB>
+		</ARG>
+
+		<PAR>
+			<PRINCIPAL><ALIAS>soportearg</ALIAS><IP>10.105.186.135</IP></PRINCIPAL>
+			<WEB><ALIAS>soporteargweb</ALIAS><IP>10.105.186.135</IP>
+			</WEB>
+		</PAR>
+
+		<POR>
+			<PRINCIPAL><ALIAS>soportepor</ALIAS><IP>10.105.186.135</IP></PRINCIPAL>
+			<WEB><ALIAS>soporteporweb</ALIAS><IP>10.105.186.135</IP></WEB>
+		</POR>
+
+		<CHI>
+			<PRINCIPAL><ALIAS>soportechi</ALIAS><IP>10.105.186.135</IP></PRINCIPAL>
+			<WEB><ALIAS>soportechiweb</ALIAS><IP>10.105.186.135</IP></WEB>
+		</CHI>
+	</SERVER>
+
+	<LDAP>
+		<ESP><SUFIX>ES</SUFIX><ldap_host>10.71.216.216</ldap_host><DOMINIO>LARES</DOMINIO><base_dn>DC=lares,DC=dsd</base_dn></ESP>
+		<ARG><SUFIX>AR</SUFIX><ldap_host>10.94.202.121</ldap_host><DOMINIO>LADIA</DOMINIO><base_dn>DC=LA,DC=DIA</base_dn></ARG>
+		<POR><SUFIX>PT</SUFIX><ldap_host>10.246.64.104</ldap_host><DOMINIO>LARPT</DOMINIO><base_dn>DC=larpt,DC=dsd</base_dn></POR>
+		<BRA><SUFIX>BR</SUFIX><ldap_host>10.105.186.5</ldap_host><DOMINIO>DIAMTZ</DOMINIO><base_dn>DC=diamtz,DC=BR</base_dn></BRA>
+		<PAR><SUFIX>PA</SUFIX><ldap_host>LA.DIA</ldap_host><DOMINIO>LARCN</DOMINIO><base_dn>OU=Paraguay,DC=LA,DC=DIA</base_dn></PAR>
+		<CHI><SUFIX>CH</SUFIX><ldap_host>10.132.190.23</ldap_host><DOMINIO>LADIA</DOMINIO><base_dn>DC=LA,DC=DIA</base_dn></CHI>
+	</LDAP>
+
+	<FTP>
+		<ARG><ftp_server>ARCONCEN1</ftp_server><ftp_user_name>lares/usertpvsop</ftp_user_name><ftp_user_pass>al59e1q6</ftp_user_pass><F_Salvar>Salvado_Ventas_SA.php</F_Salvar></ARG>
+		<PAR><ftp_server>PYCONCEN1</ftp_server><ftp_user_name>lares/usertpvsop</ftp_user_name><ftp_user_pass>al59e1q6</ftp_user_pass><F_Salvar>Salvado_Ventas_SA.php</F_Salvar></PAR>
+		<BRA><ftp_server>BRCONCEN1</ftp_server><ftp_user_name>userinfoft</ftp_user_name><ftp_user_pass>hosthost</ftp_user_pass><F_Salvar>Salvado_Ventas_SA.php</F_Salvar></BRA>
+		<POR><ftp_server>PTCONCEN1</ftp_server><ftp_user_name>lares/usertpvsop</ftp_user_name><ftp_user_pass>al59e1q6</ftp_user_pass><F_Salvar>Salvado_Ventas_SA.php</F_Salvar></POR>
+		<CHI><ftp_server>CZCONCEN1</ftp_server><ftp_user_name>lares/usertpvsop</ftp_user_name><ftp_user_pass>al59e1q6</ftp_user_pass><F_Salvar>Salvado_Ventas_SA.php"</F_Salvar></CHI>
+		<ESP><ftp_server>ESCONCEN1</ftp_server><ftp_user_name>lares/usertpvsop</ftp_user_name><ftp_user_pass>al59e1q6</ftp_user_pass><F_Salvar>Salvado_Ventas_N2A.php"</F_Salvar></ESP>
+	</FTP>
+
+<update>
+	<version>06.86.01-p4</version>
+	<lib>
+			<name>n2a-cross-services-4.2.jar</name>
+			<md5sum>cd4c1993a045a94fff34b87334055970</md5sum>
+			<size>713597</size>
+			<comment>Problema del fin de día de AMAZON (purgado)</comment>
+	</lib>
+	<lib>
+			<name>n2a-merch-movements-pos-4.2.jar</name>
+			<md5sum>70a482c2e0abb6e39d2b99a488e9462b</md5sum>
+			<size>594760</size>
+			<comment>Problema del fin de día de AMAZON (purgado)</comment>
+	</lib>
+	<lib>
+			<name>n2a-merch-movements-services-4.2.jar</name>
+			<md5sum>7c4db21d0fa2afdab1e77369a56850a7</md5sum>
+			<size>93592</size>
+			<comment>Problema del fin de día de AMAZON (purgado)</comment>
+	</lib>
+	<lib>
+			<name>n2a-offers-persistence-4.2.jar</name>
+			<md5sum>0cf150604e4271ea0c766a2bede585d0</md5sum>
+			<size>408080</size>
+			<comment>Problema de consolidado de ofertas en FRANQUICIAS con fin de día complementario</comment>
+	</lib>
+</update>
+
+
+</SERVIDORES>

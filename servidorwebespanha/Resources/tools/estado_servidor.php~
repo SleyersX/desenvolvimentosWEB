@@ -1,0 +1,40 @@
+<?php
+
+$Opcion=(empty($_GET["Opcion"])?$Opcion="PROGRESO":$_GET["Opcion"]);
+
+switch ($Opcion) {
+	case "PROGRESO":
+	case "CARGA_SISTEMA":
+		$progress=shell_exec("echo $(sudo find /home/MULTI/tmp/parallel/ -type f -name '*.par' | wc -l)");
+		echo $progress; 
+		//$progress=shell_exec("sudo awk -F',' '{c+=$2; t+=$3} END { printf \"%d/%d (%3.2f%%)\",c,t,c/t*100}' /home/MULTI/tmp/Hilo_*");
+//		$hdd=shell_exec("df -h -t ext3 | awk '/dev/ {print $6,$5}'");
+/*
+		$obj->nombre = "Prueba json";
+		$obj->datos= array(
+    		array("progreso",$progress),
+    		array("hdd",$hdd)
+		);
+
+		echo json_encode($obj);
+		$total=shell_exec("sudo cat /home/MULTI/tmp/partes/listado_tiendas.txt | wc -l");
+*/
+
+		break;
+			
+		echo "Progreso: ".shell_exec("sudo awk -F',' '{c+=$2; t+=$3} END { printf \"%d/%d (%3.2f%%)\",c,t,c/t*100}' /home/MULTI/tmp/Hilo_*")."<br>";
+		echo "HDD2: ".shell_exec("df -h -t ext3 | awk '/dev/ {print $6,$5}'")."<br>";
+		break;
+
+	case "DATOS_USUARIO":
+		echo '<span style="font-size:12px">Bienvenido/a: <span id="id_usuario"></span>';
+		break;
+
+	case "SHOW_SLAVE_STATUS":
+		require($DIR_PHP_MYSQL);
+		$res = myQUERY("SHOW SLAVE STATUS");
+		print_r($res);
+		CLOSE_BBDD();
+		break;
+}
+?>

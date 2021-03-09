@@ -1,0 +1,118 @@
+<title>LISTADO HISTORICO</title>
+<?php
+	require_once($_SERVER['DOCUMENT_ROOT']."/config.php");
+
+$tmp=myQUERY("select distinct(tienda) from Historico order by 1"); foreach($tmp as $k => $d) { @$Tiendas.=";".$d[0].":".$d[0]; }
+$tmp=myQUERY("select distinct(caja)   from Historico order by 1"); foreach($tmp as $k => $d) { @$Cajas.=";".$d[0].":".$d[0]; }
+$tmp=myQUERY("select distinct(DATE(Fecha)) from Historico order by 1 desc"); foreach($tmp as $k => $d) { @$Fechas.=";".$d[0].":".$d[0]; }
+$tmp=myQUERY("select distinct(comentario) from Historico order by 1"); foreach($tmp as $k => $d) { @$Comentarios.=";".$d[0].":".$d[0]; }
+
+$dir_actual=dirname(__FILE__);
+
+?>
+<div>
+	<style>
+		#jqGridPager * { color:white; }
+	</style>
+	<div class="ui-jqgrid" id="gbox_jqGrid" dir="ltr">
+		<span id="tienda_elegida" style="display:none"></span>
+		<table id="jqGrid" class="F_SIZE_12"></table>
+		<div id="jqGridPager"></div>
+	</div>
+</div>
+<script type="text/javascript"> 
+	$.jgrid.defaults.responsive = true;
+	var local_dir="<?php echo $dir_actual; ?>";
+
+	function Connect_to_Store(tienda) {
+		window.open(DIR_RAIZ+"/Estado_Monitorizacion/Conexion_Tienda/pre_conectar.php?Tienda="+tienda);
+		return;
+	}
+
+	$(document).ready(function () {
+		$("#jqGrid").jqGrid({
+// 			onRightClickRow: function (rowid, iRow, iCol, e) { }, 
+			caption: 'HISTORICO INTERVENCIONES E INSTALACIONES',
+			url: local_dir+'/json_historico.php?callback=?&qwery=orders',
+			mtype: "GET",
+			datatype: "jsonp",
+			colModel: [
+				{	index: 'Tienda', name: 'Tienda', label:'Tienda',
+					stype: "select", searchoptions: { value: ":[All]<?php echo $Tiendas; ?>" },
+					key: true, width: 75 },
+				{	index: 'Caja', name: 'Caja', label:'Caja',
+					stype: "select", searchoptions: { value: ":[All]<?php echo $Cajas; ?>" },
+ 					width: 50 },
+				{	index: 'Fecha', name: 'Fecha', label:'Fecha',
+					stype: "select", searchoptions: { value: ":[All]<?php echo $Fechas; ?>" },
+ 					width: 100 },
+				{	index: 'Comentario',      name: 'Comentario', label:'Comentario',
+					stype: "select", searchoptions: { value: ":[All]<?php echo $Comentarios; ?>" },
+					width: 300 }
+				],
+			sortname:"Fecha",
+			sortorder:"desc",
+// 			multiSort: true,
+			gridview: true,
+			viewrecords: true,
+			page: 1,
+			height:650,
+			autowidth: true,
+			rowNum: 50,
+			scroll: 1, // set the scroll property to 1 to enable paging with scrollbar - virtual loading of records
+			emptyrecords: 'Scroll to bottom to retrieve new page', // the message will be displayed at the bottom 
+			pager: "#jqGridPager",
+			search: true,
+			refresh: true,
+			onSelectRow: function(rowid, selected) {
+				if(rowid) {
+					var rdata = $('#jqGrid').jqGrid('getRowData', rowid);
+					$("#tienda_elegida").html(rdata.Tienda);
+				}
+			},
+			shrinktofit:true
+		});
+
+// 		var Recarga_Historico=setInterval(function() { $('#jqGrid').trigger("reloadGrid",[{current:true}]);}, 10000);
+// 		var Boton_Recargar=1;
+
+		$('#jqGrid').jqGrid('filterToolbar',{
+                stringResult: true
+                // instuct the grid toolbar to show the search options
+//                 searchOperators: true
+            });
+
+		$('#jqGrid').navGrid("#jqGridPager", {
+			search: false, edit:false, add:false, del:false, refresh: true, refreshstate: "current"
+		})
+		// add custom button to export the data to excel
+		.navSeparatorAdd("#jqGridPager",{})
+		.navButtonAdd('#jqGridPager',{
+			caption:"Excel",
+			title:"Permite salvar el listado total en formato CSV para ser cargado por hojas de calculo",
+			buttonicon:"ui-icon-document",
+			onClickButton : function () { 
+				window.open(local_dir+'/json_historico.php?csv=1', '');
+			}
+		})
+		.navSeparatorAdd("#jqGridPager",{})
+		.navButtonAdd('#jqGridPager',{
+			id:"#Boton_Info",
+			caption:"Ver Informacion tienda",
+   			buttonicon:"ui-icon-info",
+			onClickButton : function () {
+				tienda=$("#tienda_elegida").html();
+				if(tienda>0) {
+					Connect_to_Store(tienda);
+				} else {
+					alert("Debe elegir una tienda\nYou must choose a record");
+				}
+			}
+		});
+
+	});
+
+</script>
+
+<!--</body>
+</html>-->

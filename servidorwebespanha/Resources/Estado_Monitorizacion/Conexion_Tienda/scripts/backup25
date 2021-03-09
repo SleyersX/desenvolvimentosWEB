@@ -1,0 +1,100 @@
+#!/bin/bash
+
+SERVER="$1"
+
+# propiedades site, workstation
+. /usr/local/n2a/etc/n2a-context.properties
+
+# montar usb
+# /usr/local/n2a/tools/usbFunctions.sh mount /mnt/memory
+rm /usr/local/n2a/var/data/backups_repository/*
+
+# BBDD
+echo "Salvando base de datos..."
+DBDUMPFILE=/usr/local/n2a/var/data/database/backup/tools/25/backup_db_tools_25_$(date +"%Y%m%d%H%M%S").sql
+mysqldump  -u root  --single-transaction  --add-drop-database  --database n2a  --hex-blob | pv > $DBDUMPFILE.aux
+echo "SET SQL_LOG_BIN=0;" > $DBDUMPFILE
+cat $DBDUMPFILE.aux >> $DBDUMPFILE
+rm $DBDUMPFILE.aux
+cp $DBDUMPFILE /usr/local/n2a/var/data/database/backup/tools/25/bck_n2a.dump
+gzip $DBDUMPFILE
+
+# fichero version base N2A (la inicial del CD)
+/usr/local/n2a/tools/appVersionFile.sh  /usr/local/n2a/var/data/database/backup/tools/25/n2a_app_version.ctl
+
+# fichero de control
+CONTROLFILE=control_bck$(date +"%d%m%Y").info
+(
+	cd /usr/local/n2a/var/data/database/backup/tools/25/
+	echo $site	  >  $CONTROLFILE
+	echo $workstation >> $CONTROLFILE
+	date +"%d%m%Y"    >> $CONTROLFILE
+	mysql -NB -uroot -Dn2a -e 'SELECT DATABASE_VERSION FROM SITE_PARAMETERS_VERSION;' >> $CONTROLFILE
+)
+
+# BBDD
+(
+	cd /usr/local/n2a/var/data/database/backup/tools/25/
+	tar czf /usr/local/n2a/var/data/backups_repository/n2a_dump.tar.gz bck_n2a.dump n2a_app_version.ctl $CONTROLFILE 2>/dev/null
+	rm bck_n2a.dump n2a_app_version.ctl $CONTROLFILE
+)
+
+# tx salida
+echo "Salvando transacciones de salida..."
+(
+	cd /usr/local/n2a/var/data/communications/out/ 
+	tar czf /usr/local/n2a/var/data/backups_repository/TR$workstation$site.tar.gz "" $(find . -type f) 2>/dev/null
+)
+# fin dia
+echo "Salvando datos fin de dia..."
+(
+	cd /usr/local/n2a/var/data/saveendday/ 
+	tar czf /usr/local/n2a/var/data/backups_repository/ED$workstation$site.tar.gz $(find . -type f) 2>/dev/null
+)
+# TEF offline
+echo "Salvando datos de TEF..."
+(
+	cd /usr/local/n2a/var/sitef/backoffice/
+	tar czf /usr/local/n2a/var/data/backups_repository/TF$workstation$site.tar.gz $(find . -type f) 2>/dev/null
+)
+# forms
+echo "Salvando formularios..."
+(
+	cd /usr/local/n2a/etc/forms/
+	tar czf /usr/local/n2a/var/data/backups_repository/FR$workstation$site.tar.gz "" $(find . -type f) 2>/dev/null
+	cd /usr/local/n2a/var/data/labelsA4/
+	tar czf /usr/local/n2a/var/data/backups_repository/FRA4$workstation$site.tar.gz "" $(find . -type f) 2>/dev/null
+)
+# logos
+echo "Salvando logos..."
+(
+	cd /usr/local/n2a/etc/forms/images/
+	tar czf /usr/local/n2a/var/data/backups_repository/LG$workstation$site.tar.gz "" $(find . -type f) 2>/dev/null
+)
+# salida corta
+echo "Salvando salida corta..."
+(
+	cd /usr/local/n2a/var/data/shortexit/out/
+	tar czf /usr/local/n2a/var/data/backups_repository/SE$workstation$site.tar.gz $(find . -type f -name "*.tgz") 2>/dev/null
+)
+# journal
+echo "Salvando diario electronico..."
+(
+	cd /usr/local/n2a/var/data/devices/electronicJournal/
+	tar czf /usr/local/n2a/var/data/backups_repository/DE$workstation$site.tar.gz "" $(find . -type f) 2>/dev/null
+)
+
+DIR_BACKUP="/root/Salvado_$site\_$workstation"
+if [ -d $DIR_BACKUP ]; then
+	rm $DIR_BACKUP/* -f
+else
+	mkdir -p $DIR_BACKUP
+fi
+mv /usr/local/n2a/var/data/backups_repository/* $DIR_BACKUP/
+BYTES=`du $DIR_BACKUP | awk '{print $1}'`
+
+#if [ -z "$SERVER" ]; then
+#	# mueve a USB
+#	mkdir /mnt/memory/c"$workstation"_tda$site
+#	mv /usr/local/n2a/var/data/backups_repository/* /mnt/memory/c"$workstation"_tda$site
+#fi

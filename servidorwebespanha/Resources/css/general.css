@@ -1,0 +1,41 @@
+html, body{
+	width: 100%;
+	margin: 0 auto;
+	min-height: 800px;
+}
+#CABECERA {
+	top:0; 
+	border-radius: 15px 15px 0 0;
+	background: #D52B1E;
+	color: white;
+	width:100%;
+	height:60px
+}
+
+#DIV_PAIS  { float:left; margin-left:1em; }
+#DIV_DATOS { margin-left:80%; }
+#DIV_USUARIO { float:left; margin-left:20%; }
+
+table { border-collapse:collapse; padding:0; }
+
+#ICONO_PAIS { height:60px; width:60px; }
+#LOGO_DIA { height:60px; width:170px; }
+#s_reloj { font-size:14px; color:yellow; margin-right:1em; font-weight:bold;}
+#s_version { font-size:12px; color:white; margin-right:1em;}
+#demoFrame { border-width: 0; overflow:hidden; min-height:800px; max-height:800px; }
+#s_reloj   { border-width: 0; overflow:hidden; height:auto; width:auto; }
+.examples { -webkit-padding-start: 0; }
+
+.jqplot-title { padding-bottom: 0.5em; }
+table.jqplot-table-legend { margin:0 0 auto; }
+
+	progress.hdd, progress.proc { height:10px; width:70px; }
+	progress.hdd[value^="7"]::-webkit-progress-value { background:yellow; }
+	progress.hdd[value^="8"]::-webkit-progress-value { background:yellow; }
+	progress.hdd[value^="9"]::-webkit-progress-value { background:red; }
+
+.vistas_general {
+	height:200px; width:300px; font-size:75%;
+	position:relative;
+	float:left;
+}

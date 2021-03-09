@@ -1,0 +1,433 @@
+<?php
+require_once($_SERVER['DOCUMENT_ROOT']."/config.php");
+
+if (!empty($_GET["opcion"])) {
+	$year_actual=date("Y");
+	$Tienda=$_GET["Tienda"]; $Centro=urldecode($_GET["Centro"]);
+	switch($_GET["opcion"]) {
+		case "get_historico":
+			$year=$_GET["year"];
+			if ($Centro == "SEDE") {
+				$txt="<div style='padding:3em;top:50%;'><center><h3>INFORMACION DE HISTORICO DE VERSIONES NO DISPONIBLE PARA TIENDAS DE PRUEBA</h3></center></div>";
+			} else {
+				$Tabla_Historico="Historico".($year<$year_actual?"_".$year:"");
+				$res=myQUERY("select Caja, Fecha, Comentario from ".$Tabla_Historico." where tienda=$Tienda and YEAR(Fecha)='$year' order by Fecha desc, Caja");
+				if (count($res)>0) {
+					$txt="<table id='t_historico_hoy' class='tabla2' style='font-size:10px;'><tr><th>Caja</th><th>Fecha  &#9660;</th><th>Comentario</th></tr>";
+					foreach($res as $d) {
+						list($caja,$fecha,$comentario) = $d;
+						$clase="";
+						if (preg_match("/INTERVENCION/", $comentario)) $clase="Intervencion";
+						if (preg_match("/INSTALACION|Parche/", $comentario)) $clase="Instalacion'";
+						if (preg_match("/ERROR/", $comentario)) $clase="ERROR";
+						$txt.="<tr class='$clase'>"; 
+						$txt.="<td>".$caja."</td>";
+						$txt.="<td>".$fecha."</td>";
+						$txt.="<td title='".$comentario."'>".sprintf("%-55.55s",$comentario)."</td>";
+						$txt.="</tr>";
+					}
+					$txt.="</table>";
+				} else {
+					$txt="<div style='padding:3em;top:50%;'><center><h3>NO HAY DATOS</h3></center></div>";
+				}
+			}
+			echo $txt;
+			exit;
+		case "get_elementos":
+			$txt="";
+			if ($Centro == "SEDE") {
+				$txt="<div style='padding:3em;top:50%;'><center><h3>INFORMACION DE ELEMENTOS NO DISPONIBLE PARA TIENDAS DE PRUEBA</h3></center></div>";
+			} else {
+				$res=myQUERY("select * from vista_Elementos where tienda=".$Tienda);
+				if (count($res) > 0) {
+					$txt="<table id='t_elementos' class='tabla2' style='font-size:10px;'><tr><th>ELEMENTO</th><th>ONLINE</th><th>TOTAL</th></tr>";
+					foreach($res as $d) {
+						list($Elemento,$Tienda,$Conectadas,$Totales) = $d;
+						$txt.="<tr>"."<td>$Elemento</td>"."<td style='text-align:right'>$Conectadas</td>"."<td style='text-align:right'>$Totales</td>"."</tr>";
+					}
+					$txt.="</table>";
+					$tmp=myQUERY("select Elemento,IP from Elementos where Elemento like 'impres%' and conexion=1 and tienda=".$Tienda);
+					if (count($tmp)>0) {
+						$txt.="<table id='t_links_impresoras' class='tabla2' style='font-size:10px;'><tr><th>Impresora</th><th>IP</th></tr>";
+						foreach($tmp as $d)
+							$txt.="<tr><td><a href='http://".$d[1]."' target='_new' title='Pulse aqu&iacute; para ir a la p&aacute;gina WEB de la gesti&oacute;n de la impresora'>".$d[0]."</a></td><td>".$d[1]."</td></tr>";
+						$txt.="</table>";
+					}
+					$txt.="</div>";
+				}
+			}
+			echo $txt;
+			exit;
+		case "get_info_cajas":
+			echo "<pre style='font-size:10px;'>";
+			$cmd='sudo bash /home/MULTI/tools/invoca_get_info_cajas.sh '.$Tienda;
+			echo shell_exec($cmd);
+			echo "</pre>";
+			exit;
+	}
+}
+
+require_once($DOCUMENT_ROOT.$DIR_TOOLS.'tools.php');
+require_once($DOCUMENT_ROOT.$DIR_TOOLS.'comun.php');
+require_once($DOCUMENT_ROOT.$DIR_TOOLS."head_1.php");
+
+if (empty($_SESSION['usuario']) || $_SESSION['usuario'] == "Invitado") { require_once($DOCUMENT_ROOT.$DIR_RAIZ."/Msg_Error/must_login.php"); die(); }
+
+if (preg_match("/JGP043ES|OAM002ES|SFG001ES|EPT001ES|CRR051ES|PGA004ES|JAF004ES|ARF008ES|MFM001ES|RFL001ES|MSC010ES|MON001ES|DRJ004ES|SCV001ES|GRV001ES|MRM005ES|RPM007ES|NLM001ES/", strtoupper($_SESSION['usuario']))
+	|| in_array(getGrupoUser(),array(1,2,6,7,8)))
+	$permitido_cambiar_ip=1;
+else  
+	$permitido_cambiar_ip=0;
+/*
+Antequera	Jose Manuel Galán Perea JGP043ES
+Arroyomolinos	Olga Ambit MArcos	OAM002ES
+Asturias	Susana Fraile Gonzalez	SFG001ES
+Dos Hermanas	Encarni Párraga Troya	EPT001ES
+Getafe	Cecilio Rodriguez Rubio	CRR051ES
+Jaen	Pedro Garcia Armenteros	PGA004ES
+Jaen Noemi Lopez Merino ​NLM001ES *NEW*
+La Selva	Jordi Ariño Fraguas	JAF004ES
+Mallen	Alejandra Ramos Fernandez	ARF008ES
+Manises	Mar Fuentes Mañes	MFM001ES
+Mejorada	Rafael Fimia Lopez	RFL001ES
+Merida	Manuel Salgado Casado	MSC010ES
+Orihuela	Mª Jose Oltra Noguera	MON001ES
+Pais Vasco	Daniel Robles Jorquera	DRJ004ES
+Sabadell	Sonia Castaño Valencia	SCV001ES
+San Antonio	Gloria Rodriguez Vilaro	GRV001ES
+Santiago	Merchi Rico Munin	MRM005ES
+Villanubla	Roberto Perez Morillo	RPM007ES
+*/
+
+if (isset($busca_ip)) {
+	echo "COMPROBANDO CAJAS TRAS LA DIRECCION IP $busca_ip...<br><br>";
+	for ($caja=1; $caja<=11; $caja++) {
+		_ECHO("Checking 10.10.10.$caja : ");
+		$Comando='sudo timeout 5s ssh -p'.(10000+$caja).' -lroot -i /root/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=3 '.$busca_ip.'  "echo 1" 2>/dev/null  || echo 0';
+		$Datos=shell_exec($Comando);
+		if ($Datos == 1) {
+			_ECHO("FOUND! "); 
+			$URL=$PHP_CONECTAR."?host=$busca_ip&port=".(10000+$caja)."&Pais=$Pais";
+			_ECHO('<button class="b_caja" onclick="javascript:window.open(\''.$URL.'\',\'_blank\');">Conectar a CAJA '.$caja.'</button><br>');
+		} else { _ECHO("NOT FOUND!<br>"); }
+	}
+	exit;
+	
+} else {
+	if (empty($Tienda)) { die (Alert("error","ERROR: No hay definida Tienda para conexion...")); }
+
+	$Centro=urldecode(@$_GET["Centro"]);
+
+	if (empty($Centro)) {
+		$tmp=myQUERY("SELECT Centro FROM tmpTiendas WHERE numerotienda=".$Tienda);
+		$Centro=$tmp[0][0];
+	}
+	if ($Centro=="SEDE") { $Pais="XXX"; $Table="Checks".$Pais; }
+
+	$Input_Cambiar_IP="CONCAT('<input type=button value=\"',t.IP,'\" title=\"Pulse aqu&iacute; para cambiar temporalmente la IP de esta tienda\" id=\"Cambiar_IP\" />')";
+	//$Input_Cambiar_IP="t.IP";
+
+	$sql="
+		select
+			CAST(t.Numerotienda AS UNSIGNED)
+			, t.Centro
+			, t.Tipo
+			, t.Subtipo
+			, t.Direccion
+			, t.Poblacion
+			, t.Provincia
+			, t.Telefono
+			, $Input_Cambiar_IP
+			, 'N/D' /* MASTER PC */
+			, IFNULL(c.NTPVS,'N/A')
+		from tiendas t
+			left join $Table c ON t.numerotienda=c.tienda and c.caja=1
+		where t.numerotienda=$Tienda and t.centro like '%".$Centro."%' and pais in ('$Pais')";
+//	echo $sql;
+//	$res3=myQUERY("select * from tmpTiendas where centro like '%".$Centro."%'",true);
+	$Result=myQUERY($sql);
+	//var_dump($Result);
+	$Boton_Actualizar = '<input class="button" type=button value="Actualizar" id="id_b_Actualizar" title="Pulse aqu&iacute; para recargar los datos. Este proceso puede durar unos segundos..."/>';
+	$Boton_Cerrar= '<button class="button" type="button" onclick="javascript:window.close();" title="Pulse aqu&iacute; para cerrar esta ventana...">Cerrar</button>';
+
+	$Estado=myQUERY("select CONCAT(last,': ',Comentario) from Accesos_Tiendas where tienda=$Tienda and pais='$Pais'");
+	$Estado=$Estado[0][0];
+	if (preg_match("/ERROR/",$Estado)) $Estado="<b style='font-size:12px; color:red'>$Estado</b>";
+	else $Estado="<b style='font-size:12px; color:blue'>[$Estado]</b>";
+
+	$Queries=array ("Tienda $Tienda </a> $Boton_Cerrar $Boton_Actualizar $Estado",
+		array("TIENDA","CENTRO","TIPO","SUBTIPO","DIRECCION","LOCALIDAD","PROVINCIA","TELEFONO","IP","MASTER.PC","N.TPVS"),
+		$Result, NULL, "ALL", "");
+
+$Altura_Cajas=305;
+	$txt_PC="";
+	$tmp=myQUERY("select count(*) from PC_Tienda where tienda=$Tienda");
+	if ( $tmp[0][0] > 0 ) $txt_PC = Datos_PC_Conexion($Tienda);
+	$total_cajas = myQUERY("select * from $Table where Tienda=$Tienda order by caja");
+	if (count($total_cajas)<1)
+		$txt_total_cajas=Alert("warning", myGetText("NO_INFO_TPVS"));
+	else {
+		$txt_total_cajas="";
+		for ($caja=1; $caja <= count($total_cajas);  $caja++)
+			$txt_total_cajas.=Datos_Caja_Conexion(NULL, $total_cajas[$caja-1]);
+	}
+	
+	
+$Ancho_Pantalla=1250; $Ancho_Versiones=$Ancho_Pantalla*55/100; $Ancho_Historico=$Ancho_Pantalla-$Ancho_Versiones;
+$Altura_Infor_Adic=350;
+
+$f_Actualiza=(!empty($VERSION_SWAL)?"Actualiza3();":"Actualiza2();");
+
+}
+
+// 					Ejecuta_AJAX("<?php echo $_SERVER['REQUEST_URI']; &Cambiar_IP="+$("#id_new_ip").val(),"Mensaje_exec1","{}");
+?>
+
+<style>
+	#div_cajas { height:<?php echo $Altura_Cajas; ?>px !important; overflow:auto; }
+	#versiones_tienda { height:<?php echo $Altura_Infor_Adic; ?>px !important; width:<?php echo $Ancho_Versiones;?>px; }
+	#div_historico_tienda { height:<?php echo $Altura_Infor_Adic; ?>px !important; }
+	#historico_tienda { height:<?php echo $Altura_Infor_Adic-25; ?>px !important;; overflow:auto; width:<?php echo $Ancho_Historico; ?>px; }
+	.border_azul { border:1px solid blue; border-radius:3px; }
+	.Instalacion { background-color: #58FA58; }
+	.Instalacion:hover { background-color: #58FA59; }
+	.Intervencion { background-color:#F5DA81; }
+	.Intervencion:hover { background-color:#F5DA82; }
+	.ERROR { background-color:#FA5858; }
+	.ERROR:hover { background-color:#FA5859; }
+	.b_year { font-size: 10px; cursor: pointer; border:1px solid gray; background-color: lightgrey; border-radius: 2px; padding; 0 2px 0 2px; }
+	.b_year:hover { background-color: white; }
+	#div_opciones_pc {
+		display:none; background-color: white; padding:1em;  z-index: 1000; float:left; position: absolute;
+	}
+	.INFO_TIENDA { border:1px solid black; border-radius:2px; }
+	.DIA { background-color: white; }
+	.CLAREL { background-color: black; }
+	.LA_PLAZA { background-color: green; }
+</style>
+
+<div id="Aviso1" class="Aviso" style="position:absolute; top:20%; display:none;"></div>
+
+
+<div class="INFO_TIENDA DIA">
+
+<legend><b>INFORMACION DE LA TIENDA</b><a id='a_ayuda_pre' style='margin-left:3em; cursor:pointer;'>(Ayuda)</a></legend>
+
+<table>
+	<tr>
+		<td class="border_azul" style="padding:0">
+			<div style="float:left;margin:0 10 0 10"><?php Show_data2("Busqueda", $Queries, false); ?></div>
+			<div id="div_elementos" class="border_azul" style="margin:10px; float:left;"></div>
+		</td>
+	</tr>
+
+	<tr>
+		<td>
+			<button id="b_flip">VER DATOS ADICIONALES</button>
+			<div id="div_cajas" class="cajas border_azul"><?php echo $txt_PC.$txt_total_cajas; ?></div>
+			<div id="info_cajas" style="display:none" class="cajas border_azul"></div>
+		</td>
+	</tr>
+
+	<tr>
+		<td class="border_azul">
+			<table>
+				<tr>
+					<td><div id="versiones_tienda" ></div></td>
+					<td>
+						<div id="div_historico_tienda" >
+							<b style="font-size:10px;">HISTORICO DE INCIDENTES: </b>
+							<a class="b_year" title="Pulse aqu&iacute; para ver los incidentes para 2018">2018</a>							
+							<a class="b_year" title="Pulse aqu&iacute; para ver los incidentes para 2017">2017</a> 
+							<a class="b_year" title="Pulse aqu&iacute; para ver los incidentes para 2016">2016</a> 
+							<a class="b_year" title="Pulse aqu&iacute; para ver los incidentes para 2015">2015</a> 
+							<a class="b_year" title="Pulse aqu&iacute; para ver los incidentes para 2014">2014</a>
+							<div id="historico_tienda"></div>
+						</div>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+
+<div id="dialogo_cambiar_ip" title="Cambiar IP de la tienda." style="display:none">
+	<p>
+		<label for="id_new_ip">Introduzca una direccion IP valida:</label>
+		<input id="id_new_ip" name="tmp_new_ip" type=text value="" placeholder="Introduzca IP valida" title="Se necesita una IP" required pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$"/></p>
+	<p><span id="Mensaje_exec1"></span></p>
+	<?php echo Alert("info","Recuerde que el cambio es temporal.<br>Desaparece en el siguiente gestor noche."); ?>
+	</div>
+
+<div id="dialog_actualizar" title="Actualizando datos" style="display:none" >
+	<p><img src="/img/wait.gif"/></p>
+	<p><span id="Mensaje_exec2"></span></p>
+</div>
+
+</div>
+
+<script>
+var tmp_tienda="<?php echo $Tienda; ?>";
+var grupoID='<?php echo $_SESSION["grupo_usuario"]; ?>';
+var permitido_acceso_pc=(grupoID==1 || grupoID==2 || grupoID==6);
+var pais="<?php echo $Pais; ?>";
+
+var Idioma="<?php echo $Idioma; ?>";
+var anterior_vista="div_cajas";
+
+$("#b_flip").on("click",function () {
+	$(".cajas").toggle();
+})
+
+function ajax_actualizar() {
+	var reset_inv=1;
+//	if (!$('#reset_inv')[0].checked)
+//		reset_inv=0;
+	$.ajax({
+		url: "/Resources/tools/actualiza.php?Tienda="+tmp_tienda+"&Pais="+pais+"&reset_inv="+reset_inv,
+		timeout: 60000,
+		error: function(jqXHR, textStatus){
+			switch (textStatus) {
+				case "timeout": swal("ERROR","LA CAJA MASTER NO RESPONDE","error"); break;
+				case "in_use": swal("WARNING","YA HAY UN PROCESO DE ACTUALIZACON EN CURSO","warning"); break;
+			}
+		},
+		success: function(){
+			location.reload();
+		}
+	});	
+}
+
+function Actualiza2() {
+	var texto="<p>Desea actualizar la informaci&oacute;n de la tienda?</p><p>Esto puede llevar varios segundos.<br><br><b>NOTA:</b> <i>los datos del inventario HW-SW ser&aacute;n reseteados</i></p>";
+	swal({
+		title: "Update?",
+		text: texto,
+		html:true, 
+		type: "info",
+		showCancelButton: true,
+		showLoaderOnConfirm: true,
+		confirmButtonText: "Actualizar",
+		closeOnConfirm: false,
+	},
+	function(){
+		$(this).text="<p>Actualizando la informacion, por favor espere...</p><p><i>(Este proceso tiene un timeout de 60 segundos. Si la caja master no responde en ese tiempo, o hay problemas para obtener la información, se cancelará la actualización de datos</i></p>"; 
+		ajax_actualizar();
+	});
+}
+
+function Actualiza3() {
+	swal({
+		title: "Update?",
+		html: "<p>&iquest;Desea actualizar la informaci&oacute;n de la tienda?<br><i>(Esto puede llevar varios segundos)</i><p><p><b>NOTA:</b> <i>los datos del inventario HW-SW ser&aacute;n reiniciados</i></p>", 
+		type: "info",
+		showCancelButton: true,
+		showLoaderOnConfirm: true,
+		confirmButtonText: '<?php echo ($Idioma=="ESP"?"Actualizar":"Update"); ?>',
+		cancelButtonText: '<?php echo ($Idioma=="ESP"?"Cancelar":"Cancel"); ?>',
+		allowOutsideClick: false,
+		preConfirm: function () {
+			return new Promise(function (resolve,reject) {
+				ajax_actualizar();
+			})
+		}
+	});
+}
+
+
+$("#dialog_actualizar").dialog({
+	autoOpen: false, modal: true, width: 'auto', height: 'auto', resizable: false,
+	open: function(event, ui) {
+		var parametros = { "OPCION":"UPDATE_DATA", "Tienda": "<?php echo $Tienda; ?>", "Pais":"<?php echo $Pais; ?>" };
+		Ejecuta_AJAX("Mensaje_exec2", parametros );
+		location.reload();
+	}});
+	
+$("#dialogo_cambiar_ip").dialog({
+	autoOpen: false, modal: true, width: 'auto', height: 'auto', resizable: false,
+	buttons: {
+		"Aceptar": function() {
+			var Nueva_IP=$("#id_new_ip").val();
+			var Actual_IP=$("#Cambiar_IP").val();
+			if (Nueva_IP != Actual_IP) {
+				var Tienda="<?php echo @$Tienda; ?>";
+				var parametros= { "OPCION":"CHANGE_IP", "Nueva_IP": Nueva_IP, "Tienda": Tienda, "Centro":"<?php echo @$Centro; ?>" }
+				Ejecuta_AJAX("Mensaje_exec1", parametros );
+				Graba_Historico(Tienda,1,"Cambio IP por usuario <?php echo $_SESSION['usuario'];?>. Antes: "+Actual_IP+", Nueva: "+Nueva_IP);
+				//$.get('http://estpvds/actualizaTienda.php?numeroTienda='+'<?php echo @$Tienda; ?>');
+				$(this).dialog("close");
+				$("#Mensaje_exec2").html("<font color=blue>(Intentando nueva direccion IP: "+$("#id_new_ip").val()+")</font>");
+				$("#dialog_actualizar").dialog("open");
+			}
+			else
+				$("#Mensaje_exec1").html("<b>NO HA HABIDO CAMBIO DE IP</b>");
+		},
+		"Cancelar": function () {
+			$(this).dialog("close");
+		}
+	}
+});
+
+$("#Cambiar_IP").click(function() {
+	$("#id_new_ip").val($(this).val());
+	var permitido_cambiar_ip=<?php echo $permitido_cambiar_ip; ?>;
+	if (permitido_cambiar_ip == 0)
+		swal("AVISO","No tiene permisos para modificar este campo.","warning");
+	else
+		$("#dialogo_cambiar_ip").dialog("open");	
+});
+
+$("#id_b_Actualizar").click(function() {
+	<?php echo $f_Actualiza; ?>
+});
+
+$("#a_ayuda_pre").on("click",function () {
+	$("#Aviso1").load("./traslate/ayuda_pre_conectar.php #"+Idioma);
+	$("#Aviso1").toggle();
+});
+var year_actual=2017;
+var url_datos_tienda="Tienda=<?php echo $Tienda; ?>&Centro=<?php echo urlencode($Centro); ?>";
+var loading="<div style='width:50%; margin: 0 auto;'><img src='/img/Loading-data.gif'/></div>";
+
+$("#div_elementos").load("./pre_conectar.php?opcion=get_elementos&"+url_datos_tienda);
+$("#versiones_tienda").html(loading).load("./versiones_tienda.php?"+url_datos_tienda);
+$("#versiones_tienda").ready(function () {
+	$("#info_cajas").load("./pre_conectar.php?opcion=get_info_cajas&"+url_datos_tienda);	
+});
+
+$(".b_year").on("click",function () {
+	year_actual=$(this).text(); console.log(year_actual);
+	$("#historico_tienda").html(loading).load("./pre_conectar.php?opcion=get_historico&"+url_datos_tienda+"&year="+year_actual);
+});
+$(".b_year").first().click();
+
+$(".b_pc").hover(
+	function(e) { $("#div_opciones_pc").show(); },
+	function(e) { $("#div_opciones_pc").hide(); }
+);
+$("#div_opciones_pc").hover(
+	function(e) { $("#div_opciones_pc").show(); },
+	function(e) { $("#div_opciones_pc").hide(); }
+);
+
+$(".tpv").on("click",function () {
+	if ($(this).attr("src")) {
+		New_Window($(this).attr("src"));
+	}
+	else {
+		alert("La TPV est%aacute; apagada o desconectada. Actualice la p&áacute;gina o pulse en el boton dde actualizar.")
+	}	
+});
+
+$(".opc_pc").on("click",function () {
+	if (!permitido_acceso_pc)
+		alert("No tiene los permisos necesarios.");
+	else
+		new_window_open("<?php echo $SERVER_SHELLINABOX; ?>"+"?comandoTerminal="+$(this).attr('id')+"&IP="+$("#dir_ip_pc").html(), $(this).attr("value"));
+})
+
+</script>
+
+
+</body>
+</html>

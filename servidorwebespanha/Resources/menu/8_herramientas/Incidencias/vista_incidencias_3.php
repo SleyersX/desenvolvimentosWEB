@@ -1,0 +1,551 @@
+<title>INCIDENCIAS</title>
+<?php
+$No_Carga_ssh2=true;
+require($_SERVER['DOCUMENT_ROOT']."/config.php");
+
+if (empty($_SESSION['usuario'])) { require_once($DOCUMENT_ROOT.$DIR_RAIZ."/Msg_Error/must_login.php"); die(); }
+if (!in_array($_SESSION['grupo_usuario'], array(1,2,6,7,8))) {
+	require_once($DOCUMENT_ROOT.$DIR_RAIZ."/Msg_Error/incorrect_profile.php"); die(); }
+
+if(empty($_GET['x'])) {
+	require_once($DOCUMENT_ROOT.$DIR_RAIZ."/styles_js/head_1.php");
+	echo '<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />';
+}
+
+//myQUERY("CREATE OR REPLACE VIEW Incidencias_N2A AS (SELECT * FROM Incidencias WHERE Servicio");
+
+//shell_exec("cd /home/soporteweb/Incidencias/; if [ `find export.txt -newer ultima_vez` ]; then php ../tools/genera_incidencias.php && touch ultima_vez ; fi");
+
+function Busca_en_Array($lista, $valor, $indice, $campo) {
+	foreach ($lista as $k => $d) if ($d[$indice-1] == $valor) return $d[$campo-1];
+	return 0;
+}
+
+$years=array(
+// 	"All"  => array("All", "block"),
+	"2017" => array("2017","block")
+	
+/*	,"2016" => array("2016","block"),
+	,"2015" => array("2015","block"),
+	,"2014" => array("2014","none"),
+	,"2013" => array("2013","none"),
+	,"2012" => array("2012","none"),
+	,"2011" => array("2011","none"),
+	,"2010" => array("2010","none")*/
+);
+
+//$year_actual=date("Y");
+$year_actual="2017";
+
+$txt_meses=array("fake", "ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic");
+
+$SQL_BASE="select year(FechGrab) as year,month(FechGrab) as mes,day(FechGrab) as dia,week(FechGrab) as semana, DiaNiveMax, DiaNiveActu, Servicio, Estado in ('Closed','Resolved') as estado from Incidencias where year(FechGrab)='$year_actual'";
+$l1 = "
+	select year, mes, dia, semana
+		, N1_TPV,  N2_TPV,  N3_TPV,  N4_TPV
+		, N1_VELA, N2_VELA, N3_VELA, N4_VELA
+		, P_N1_TPV,  P_N2_TPV,  P_N3_TPV,  P_N4_TPV
+		, P_N1_VELA, P_N2_VELA, P_N3_VELA, P_N4_VELA
+		, (N1_TPV+N2_TPV+N3_TPV+N4_TPV) 'T_TPVs'
+		, (N1_VELA+N2_VELA+N3_VELA+N4_VELA) 'T_VELA'
+		, (P_N1_TPV+P_N2_TPV+P_N3_TPV+P_N4_TPV) 'P_T_TPVs'
+		, (P_N1_VELA+P_N2_VELA+P_N3_VELA+P_N4_VELA) 'P_T_VELA'
+		, Total
+	FROM (
+		select year,mes,dia,semana
+			, SUM(CASE WHEN DiaNiveMax=1 AND Servicio NOT like '%VELA%' AND estado THEN 1 ELSE 0 END) as N1_TPV
+			, SUM(CASE WHEN DiaNiveMax=2 AND Servicio NOT like '%VELA%' AND estado THEN 1 ELSE 0 END) as N2_TPV
+			, SUM(CASE WHEN DiaNiveMax=3 AND Servicio NOT like '%VELA%' AND estado THEN 1 ELSE 0 END) as N3_TPV
+			, SUM(CASE WHEN DiaNiveMax=4 AND Servicio NOT like '%VELA%' AND estado THEN 1 ELSE 0 END) as N4_TPV
+			, SUM(CASE WHEN DiaNiveMax=1 AND Servicio like '%VELA%' AND estado THEN 1 ELSE 0 END) as N1_VELA
+			, SUM(CASE WHEN DiaNiveMax=2 AND Servicio like '%VELA%' AND estado THEN 1 ELSE 0 END) as N2_VELA
+			, SUM(CASE WHEN DiaNiveMax=3 AND Servicio like '%VELA%' AND estado THEN 1 ELSE 0 END) as N3_VELA
+			, SUM(CASE WHEN DiaNiveMax=4 AND Servicio like '%VELA%' AND estado THEN 1 ELSE 0 END) as N4_VELA
+
+			, SUM(CASE WHEN DiaNiveActu=1 AND Servicio NOT like '%VELA%' AND NOT estado THEN 1 ELSE 0 END) as P_N1_TPV
+			, SUM(CASE WHEN DiaNiveActu=2 AND Servicio NOT like '%VELA%' AND NOT estado THEN 1 ELSE 0 END) as P_N2_TPV
+			, SUM(CASE WHEN DiaNiveActu=3 AND Servicio NOT like '%VELA%' AND NOT estado THEN 1 ELSE 0 END) as P_N3_TPV
+			, SUM(CASE WHEN DiaNiveActu=4 AND Servicio NOT like '%VELA%' AND NOT estado THEN 1 ELSE 0 END) as P_N4_TPV
+			, SUM(CASE WHEN DiaNiveActu=1 AND Servicio like '%VELA%' AND NOT estado THEN 1 ELSE 0 END) as P_N1_VELA
+			, SUM(CASE WHEN DiaNiveActu=2 AND Servicio like '%VELA%' AND NOT estado THEN 1 ELSE 0 END) as P_N2_VELA
+			, SUM(CASE WHEN DiaNiveActu=3 AND Servicio like '%VELA%' AND NOT estado THEN 1 ELSE 0 END) as P_N3_VELA
+			, SUM(CASE WHEN DiaNiveActu=4 AND Servicio like '%VELA%' AND NOT estado THEN 1 ELSE 0 END) as P_N4_VELA
+
+			, count(*) as Total
+		from ( $SQL_BASE ) as temp group by year,mes,dia
+	) as temp2
+	order by year, mes, dia";
+
+$ret=myQUERY($l1);
+$vista_total="['year','mes','dia','semana','N1_TPV','N2_TPV','N3_TPV','N4_TPV','N1_VELA','N2_VELA','N3_VELA','N4_VELA','T_TPV','T_VELA','TOTAL','ESTADO'],";
+
+$vista_mensual="";
+$calendar="[ { type: 'date', id: 'Date' }, { type: 'number', id: 'Incidencias' }],";
+$t_tpvs=array(); $v_mes=array();
+foreach($ret as $k => $d){
+	list($year, $mes, $dia, $semana,
+		$N1_TPV, $N2_TPV, $N3_TPV, $N4_TPV, $N1_VELA, $N2_VELA, $N3_VELA, $N4_VELA,
+		$P_N1_TPV, $P_N2_TPV, $P_N3_TPV, $P_N4_TPV, $P_N1_VELA, $P_N2_VELA, $P_N3_VELA, $P_N4_VELA,
+		$T_TPVs, $T_VELA, $P_T_TPVs, $P_T_VELA,
+		$Total) = $d;
+	@$total_mes[$mes]+=$Total;
+	@$t_mes[$mes]+=$T_TPVs;
+	@$v_mes[$mes]+=$T_VELA;
+	@$resu_tpvs[$mes][0]+=$N1_TPV;    @$resu_tpvs[$mes][1]+=$N2_TPV;    @$resu_tpvs[$mes][2]+=$N3_TPV;    @$resu_tpvs[$mes][3]+=$N4_TPV;
+	@$resu_vela[$mes][0]+=$N1_VELA;   @$resu_vela[$mes][1]+=$N2_VELA;   @$resu_vela[$mes][2]+=$N3_VELA;   @$resu_vela[$mes][3]+=$N4_VELA;
+	@$pend_tpvs[$mes][0]+=$P_N1_TPV;  @$pend_tpvs[$mes][1]+=$P_N2_TPV;  @$pend_tpvs[$mes][2]+=$P_N3_TPV;  @$pend_tpvs[$mes][3]+=$P_N4_TPV;
+	@$pend_vela[$mes][0]+=$P_N1_VELA; @$pend_vela[$mes][1]+=$P_N2_VELA; @$pend_vela[$mes][2]+=$P_N3_VELA; @$pend_vela[$mes][3]+=$P_N4_VELA;
+	$calendar.="[ new Date(".$year.",".($mes-1).",".$dia."), $Total ],";
+}
+
+$l2="SELECT ym, velapos,vela from (
+	SELECT
+		  date_format(FechGrab,'%Y-%m') as ym
+		  /*concat('new_Date(',year(FechGrab),',',month(FechGrab),')' as ym*/
+		, SUM(CASE WHEN Servicio NOT like '%VELA%' THEN 1 ELSE 0 END) as velapos
+		, SUM(CASE WHEN Servicio like '%VELA%' THEN 1 ELSE 0 END) as vela
+		 from Incidencias where year(FechGrab)='$year_actual' GROUP BY 1 order by 1 desc ) as temp order by ym asc";
+//		 from Incidencias GROUP BY 1 order by 1 desc limit ".$periodo_evolucion.") as temp order by ym asc";
+$tmp=myQUERY($l2);
+$max_evolucion=count($tmp);
+$evolucion_ultimos_years="['year-mes','Vela-POS','VELA', 'TOTAL' ],";
+$sum_tpv=$sum_vela=$sum_year_tpv=$sum_year_vela=0;
+foreach($tmp as $d) {
+	list($ym,$velapos,$vela)=$d;
+	$evolucion_ultimos_years.="[ '$ym', $velapos, $vela, ".($vela+$velapos)." ],";
+	$sum_tpv+=$velapos; $sum_vela+=$vela;
+	if (preg_match("/^2017-/",$ym)) {
+		$sum_year_tpv+=$velapos;
+		$sum_year_vela+=$vela;
+	}
+}
+$pie_global="['Servicio','Incidencias'],['Vela-POS',$sum_tpv ],[ 'VELA', $sum_vela ]";
+$pie_global_year="['Servicio','Incidencias'],['Vela-POS',$sum_year_tpv ],[ 'VELA', $sum_year_vela ]";
+	
+
+$vista_mes_resueltas="['Mes','Res.TPVs', 'Pend.TPVs', 'Res.VELA','Pend.VELA',{ role: 'annotation'}],";
+foreach($t_mes as $k => $d) {
+	$Res_TPV=$Res_VELA=$Pend_TPV=$Pend_VELA=0;
+	if (!empty($resu_tpvs[$k])) foreach($resu_tpvs[$k] as $d1) $Res_TPV+=$d1;
+	if (!empty($pend_tpvs[$k])) foreach($pend_tpvs[$k] as $d1) $Pend_TPV+=$d1;
+	if (!empty($resu_vela[$k])) foreach($resu_vela[$k] as $d1) $Res_VELA+=$d1;
+	if (!empty($pend_vela[$k])) foreach($pend_vela[$k] as $d1) $Pend_VELA+=$d1;
+	$vista_mes_resueltas.="[ '".$txt_meses[$k]."', $Res_TPV, $Pend_TPV, $Res_VELA, $Pend_VELA, ".($Res_TPV+$Pend_TPV+$Res_VELA+$Pend_VELA)."],";
+}
+
+$vista_mes_total="['Mes', 'Nivel.1', 'Nivel.2', 'Nivel.3', 'Nivel.4', { role: 'annotation'}],";
+$vista_mes_total_pendientes="['Mes', 'Nivel.1', 'Nivel.2', 'Nivel.3', 'Nivel.4', { role: 'annotation'}],";
+$t_pendientes_mes=array();
+
+$RT_N1=$RT_N2=$RT_N3=$RT_N4=$RT_Total=0;
+$PT_N1=$PT_N2=$PT_N3=$PT_N4=$PT_Total=0;
+$RV_N1=$RV_N2=$RV_N3=$RV_N4=$RV_Total=0;
+$PV_N1=$PV_N2=$PV_N3=$PV_N4=$PV_Total=0;
+
+foreach($resu_tpvs as $k => $d) {
+	@list($N1, $N2, $N3, $N4)=$d;
+	$total=($N1+$N2+$N3+$N4); $vista_mes_total.="[ '".$txt_meses[$k]." TPVS', ".$N1.",".$N2.",".$N3.",".$N4.",".$total." ],";
+	@$T_N1+=$N1; @$T_N2+=$N2;  @$T_N3+=$N3; @$T_N4+=$N4;
+	@$RT_N1+=$N1; @$RT_N2+=$N2;  @$RT_N3+=$N3; @$RT_N4+=$N4; $RT_Total+=($N1+$N2+$N3+$N4);
+
+	@list($N1, $N2, $N3, $N4)=$resu_vela[$k];
+	$total=($N1+$N2+$N3+$N4); $vista_mes_total.="[ '".$txt_meses[$k]." VELA', ".$N1.",".$N2.",".$N3.",".$N4.",".$total." ],";
+	@$V_N1+=$N1; @$V_N2+=$N2;  @$V_N3+=$N3; @$V_N4+=$N4;
+	$vista_mes_total.="[ '', null, null, null, null, '' ],";
+	@$RV_N1+=$N1; @$RV_N2+=$N2;  @$RV_N3+=$N3; @$RV_N4+=$N4; $RV_Total+=($N1+$N2+$N3+$N4);
+	
+	@list($N1, $N2, $N3, $N4)=$pend_tpvs[$k];
+	$total=($N1+$N2+$N3+$N4); $vista_mes_total_pendientes.="[ '".$txt_meses[$k]." TPVS', ".$N1.",".$N2.",".$N3.",".$N4.",".$total." ],";
+	@$V_N1+=$N1; @$V_N2+=$N2;  @$V_N3+=$N3; @$V_N4+=$N4;
+	$PT_N1+=$N1; $PT_N2+=$N2; $PT_N3+=$N3; $PT_N4+=$N4; $PT_Total+=($N1+$N2+$N3+$N4);
+
+	@list($N1, $N2, $N3, $N4)=$pend_vela[$k];
+	$total=($N1+$N2+$N3+$N4); $vista_mes_total_pendientes.="[ '".$txt_meses[$k]." VELA', ".$N1.",".$N2.",".$N3.",".$N4.",".$total." ],";
+	@$V_N1+=$N1; @$V_N2+=$N2;  @$V_N3+=$N3; @$V_N4+=$N4;
+	$vista_mes_total_pendientes.="[ '', null, null, null, null, '' ],";
+	$PV_N1+=$N1; $PV_N2+=$N2; $PV_N3+=$N3; $PV_N4+=$N4; $PV_Total+=($N1+$N2+$N3+$N4);
+	
+}
+$pie_mes_total="['Nivel','TPV', 'VELA' ],[ 'Nivel 1', $T_N1, $V_N1 ], [ 'Nivel 2',$T_N2, $V_N2 ], [ 'Nivel 3',$T_N3, $V_N3 ], [ 'Nivel 4',$T_N4, $V_N4 ]";
+
+//// INCIDENCIAS PENDIENTES POR SISTEMA TPV o VELA
+$inci_total_pend="['Sistema', 'N.1','N.2','N.3','N.4', { role: 'annotation'}],['VELA', $PV_N1, $PV_N2, $PV_N3, $PV_N4,$PV_Total],['TPVs', $PT_N1, $PT_N2, $PT_N3, $PT_N4,$PT_Total],";
+$inci_total_resu="['Sistema', 'N.1','N.2','N.3','N.4', { role: 'annotation'}],['VELA', $RV_N1, $RV_N2, $RV_N3, $RV_N4,$RV_Total],['TPVs', $RT_N1, $RT_N2, $RT_N3, $RT_N4,$RT_Total],";
+
+$ret=myQUERY("select IF(Servicio like '%VELA%','VELA','TPV') as Servicio,if(estado='Closed','Cerrada',if(estado='Resolved','Resuelta, pendiente cierre',if(estado like 'Pending%','Pendiente de informacion','En estudio'))) as myEstado,count(*) from Incidencias where year(fechgrab)='$year_actual' group by 1,2");
+$pendientes_TPV="['Estado', 'Incidencias' ],";
+$pendientes_VELA="['Estado', 'Incidencias' ],";
+foreach($ret as $d) {
+	@list($servicio, $estado, $cantidad)=$d;
+	if ($servicio == "VELA") $pendientes_VELA .= "[ '$estado', $cantidad ],";
+	if ($servicio == "TPV") $pendientes_TPV .= "[ '$estado', $cantidad ],";
+}
+
+$ret=myQUERY("select case when dif='Pdte' then 'Pendientes' when dif<1 then 'Menos de 1 dia' when dif in (1,2,3) then 'Entre 1 y 3 dias' when dif > 3 then 'Mas de 3 dias' end as Tiempo, count(*) from (select p1, p2, if (p2,abs(period_diff(p1,p2)),'Pdte') as dif from (select date_format(FechGrab,'%Y%m%d') as p1,date_format(FechReso,'%Y%m%d') as p2 from Incidencias where year(FechGrab)='$year_actual') as temp1) as temp2 group by 1");
+$tiempos_TPV="['Tiempo Resolucion', 'Cantidad' ],";
+foreach($ret as $d) {
+	@list($Tiempo, $Cantidad)=$d;
+	$tiempos_TPV.="[ '$Tiempo', $Cantidad ],";
+}
+
+$query_niveles="year(fechgrab)";
+for($nivel=1; $nivel<=4; $nivel++) $query_niveles.=",sum(case when DiaNiveMax=$nivel THEN 1 ELSE 0 END) '".$nivel."'";
+$ret_tpvs=myQUERY("select $query_niveles from Incidencias where pais in ('ESP') and Servicio not like '%VELA%' and Estado in ('Closed','Resolved') group by 1");
+$ret_vela=myQUERY("select $query_niveles from Incidencias where pais in ('ESP') and Servicio like '%VELA%' and Estado in ('Closed','Resolved') group by 1");
+$inci_total_resu_todos="['Year','N1','N2','N3','N4', { role: 'annotation'}]";
+$inci_total_resu_todos_vela="['Year','N1','N2','N3','N4', { role: 'annotation'}]";
+foreach($ret_tpvs as $k => $d) {
+	$inci_total_resu_todos.=",['".$d[0]." TPVs'";
+	$subtotal=0;
+	foreach($d as $k1 => $d1) if ($k1>0) { $inci_total_resu_todos.=",".$d1; $subtotal+=$d1; }
+	$inci_total_resu_todos.=",".$subtotal."]";
+}
+foreach($ret_vela as $k2=>$d2) {
+	$inci_total_resu_todos_vela.=",['".$d2[0]." VELA'";
+	$subtotal=0;
+	foreach($d2 as $k1 => $d1) if ($k1>0) { $inci_total_resu_todos_vela.=",".$d1; $subtotal+=$d1; }
+	$inci_total_resu_todos_vela.=",".$subtotal."]";
+} 
+
+//echo $inci_total_resu_todos;
+
+$Ancho_Pantalla=1250;
+$Alto_Pantalla=950;
+$Altura_Cuadro=$Alto_Pantalla-120;
+
+?>
+
+<style>
+	body {
+		height: 980px !important;
+		margin: 0 0 auto;
+		background-color: whitesmoke;
+	}
+	.h3_incidencias { cursor:pointer; }
+	.rdiv {
+		float:left; position:relative;
+		border-radius:8px;
+		border:1px solid red;
+		padding:2px;
+		background-color:white;
+		margin:1px;
+	}
+	.flotante { position:relative; float:left }
+
+.contenedor{
+	width:<?php echo $Ancho_Pantalla; ?>px !important;
+	height: 800px !important;
+	margin: 0 0 auto;
+	background-color: whitesmoke;
+	border-radius: 4px;
+}
+ 
+	.font_12 { font: 13.3333px Arial; }
+	
+#example-one {
+	background-color: whitesmoke; margin: 0 0 auto;
+	}
+
+#example-one .nav { overflow: hidden; margin: 0 0 1px 0; }
+#example-one .nav li { width: 97px; float: left; margin: 0 10px 0 0; }
+#example-one .nav li.last { margin-right: 0; }
+#example-one .nav li a { display: block; padding: 5px; background: #959290; color: white; font-size: 10px; text-align: center; border: 0; }
+#example-one .nav li a:hover { background-color: #111; }
+
+#example-one ul { list-style: none; }
+#example-one ul li a { display: block; border-bottom: 1px solid #666; padding: 4px; color: #666; }
+#example-one ul li a:hover, #example-one ul li a:focus { background: #fe4902; color: white; }
+#example-one ul li:last-child a { border: none; }
+
+#example-one li.nav-one a.current, ul.featured li a:hover { background-color: #0575f4; color: white; }
+#example-one li.nav-two a.current, ul.core li a:hover { background-color: #d30000; color: white; }
+#example-one li.nav-three a.current, ul.jquerytuts li a:hover { background-color: #8d01b0; color: white; }
+#example-one li.nav-four a.current, ul.classics li a:hover { background-color: #FE4902; color: white; }
+ 
+#graph_month_tpvs, #graph_month_pend { height:200px; width:775px; }
+#inci_total_pend, #inci_total_resu  { height:100px; width:217px; }
+</style>
+
+<div id="example-one">
+<!--	<ul class="nav">
+		<li class="nav-one"><a href="#general" class="current">General</a></li>
+		<li class="nav-two"><a href="#incidencias">Incidencias</a></li>
+		<li class="nav-three"><a href="#jquerytuts">jQuery</a></li>
+		<li class="nav-four last"><a href="#classics">Classics</a></li>
+	</ul>
+-->
+	<div class="list-wrap">
+		<ul id="general">
+			<li>
+				<div class="contenedor">
+					<div id="calendar_basic" style="height: 180px; width: 750" class="flotante rdiv"></div>
+					<div id="graph_month_res" style="width: 450; height: 180px; " class="flotante rdiv"></div>
+					<div style="height:627 !important;" class="flotante rdiv">
+						<div id="pie_global" ></div>
+						<div id="pie_global_year"></div>
+						<div id="pie_tiempos"></div>
+					</div>
+					<div class="flotante rdiv">
+						<span class="font_12">
+							Seleccione per&iacute;odo de visualizaci&oacute;n:
+							<select id="select_evolucion">
+								<option value="<?php echo $max_evolucion;?>">Todos los meses</option>
+								<option value="24">Ultimos 24 meses</option>
+								<option value="12" selected="true">Ultimos 12 meses</option>
+							</select>
+						</span>
+						<div id="graph_evolucion" class="" style="height:200px; width:1000px"></div>
+					</div>
+
+					<div class="flotante rdiv">
+						<div id="graph_month_tpvs"></div>
+						<div id="graph_month_pend"></div>
+					</div>
+					<div style="height:400 !important;" class="flotante rdiv">
+						<div>
+							<select id="select_total_resu">
+								<option value "TPVs">TPVs</option>
+								<option value "VELA">VELA</option>
+							</select>
+							<div id="inci_total_resu_todos"></div>
+							<div id="inci_total_resu_todos_vela" style="display:none"></div>
+						</div>
+						<div id="inci_total_pend"></div>
+					</div>
+
+				</div>
+			
+			</li>
+		</ul>
+		 
+		 <ul id="incidencias" style="display:none">
+			<li>
+				<div style="width:1000px; border:1px solid black">
+					<div class="ui-jqgrid " id="gbox_jqGrid" dir="ltr"><table id="jqGrid" class="F_SIZE_10"></table><div id="jqGridPager"></div></div>
+				</div>
+			</li>
+		 </ul>
+    </div> <!-- END List Wrap -->
+ 
+ </div> <!-- END Organic Tabs (Example One) -->
+
+
+<script>
+
+	var all_years=[ <?php if (!empty($all_years)) foreach($all_years as $d) echo $d[0].","; ?> ];
+	var year_actual=<?php echo $year_actual; ?>;
+
+	var data1, data2, data3, data4;
+	var d_mensual, d_mensual_tpvs, pendientes_tpv, pendientes_vela,d_evolucion;
+	var periodo_evolucion, texto_periodo_evolucion, max_periodo_evolucion=<?php echo $max_evolucion;?>;
+
+	$("#select_evolucion").on("change",function () {
+		var sel1=$(this).find(":selected");
+		periodo_evolucion=max_periodo_evolucion-sel1.val();
+		texto_periodo_evolucion=sel1.text();
+		drawEvolucion();
+	});
+
+	$("#select_total_resu").on("change",function () {
+		var sel1=$(this).find(":selected");
+		if (sel1.text() == "TPVs") { $("#inci_total_resu_todos_vela").hide(); $("#inci_total_resu_todos").show(); }
+		if (sel1.text() == "VELA") { $("#inci_total_resu_todos").hide(); $("#inci_total_resu_todos_vela").show(); }
+	});
+
+	function drawCharts_Incidencias(){
+		get_Data_Incidencias();
+		drawTable_Incidencias();
+	}
+
+	//$("#example-one").organicTabs();
+   
+	function get_Data_Incidencias() {
+		data1 = new google.visualization.arrayToDataTable([ <?php echo $vista_total; ?> ]);
+		pendientes_tpv = new google.visualization.arrayToDataTable([ <?php echo $pendientes_TPV; ?> ]);
+		pendientes_vela = new google.visualization.arrayToDataTable([ <?php echo $pendientes_VELA; ?> ]);
+		d_mensual_resueltas = new google.visualization.arrayToDataTable([ <?php echo $vista_mes_resueltas; ?> ]);
+
+		d_evolucion = new google.visualization.arrayToDataTable([ <?php echo $evolucion_ultimos_years; ?> ]);
+
+		d_pie_global = new google.visualization.arrayToDataTable([ <?php echo $pie_global; ?> ]);
+		d_pie_global_year = new google.visualization.arrayToDataTable([ <?php echo $pie_global_year; ?> ]);
+		d_pie_tiempos = new google.visualization.arrayToDataTable([ <?php echo $tiempos_TPV; ?> ]);
+		
+		d_inci_total_resu = new google.visualization.arrayToDataTable([ <?php echo $inci_total_resu; ?> ]);
+		d_inci_total_resu_todos = new google.visualization.arrayToDataTable([ <?php echo $inci_total_resu_todos; ?> ]);
+		d_inci_total_resu_todos_vela = new google.visualization.arrayToDataTable([ <?php echo $inci_total_resu_todos_vela; ?> ]);
+		d_inci_total_pend = new google.visualization.arrayToDataTable([ <?php echo $inci_total_pend; ?> ]);
+
+		d_mensual_total = new google.visualization.arrayToDataTable([ <?php echo $vista_mes_total; ?> ]);
+		d_mensual_total_pendientes = new google.visualization.arrayToDataTable([ <?php echo $vista_mes_total_pendientes; ?> ]);
+		
+		d_total = new google.visualization.arrayToDataTable([ <?php echo $calendar; ?> ]);
+	}
+
+	function setTooltipContent(dataTable,row) {
+		if (row != null) {
+			var Caja = dataTable.getValue(row, 0);
+			var Version = dataTable.getValue(row, 1);
+			var Fecha_Inicio = dataTable.getValue(row, 2);
+			var Fecha_Fin = dataTable.getValue(row, 3);
+			var content = '<div><b>'+Caja+'</b><hr>' + Version + '<hr><b>Fecha inicio:</b> '+Fecha_Inicio+'<hr><b>Fecha Fin:</b> '+Fecha_Fin+'</div>';
+			var tooltip = document.getElementsByClassName("google-visualization-tooltip")[0];
+			tooltip.innerHTML = content;
+		}
+	}
+
+	var hAxis_mensual_options={ viewWindow: { min: 0, max: 13 }, format:"",  textStyle : { fontSize: 10 } };	
+	var hAxis_mensual_total_options={ viewWindow: { min: 0 }, format:"",  textStyle : { fontSize: 10 } };	
+	var hAxis_semanal_options={ viewWindow: { min: 0, max: 53 }, format:"" };
+	var altura_year=200;
+	
+	function drawEvolucion() {
+		var chart_evolucion = new google.visualization.LineChart(document.getElementById('graph_evolucion'));
+		chart_evolucion.draw(d_evolucion, {
+			title: 'Evolucion de las incidencias ('+texto_periodo_evolucion+')', 
+//			height:"200", width:"1000",
+			chartArea: { left:45, width:'95%'},
+			legend: { position: 'top', maxLines: 1, textStyle : { fontSize: 8 } }, 
+			'focusTarget': 'category',
+			hAxis: { viewWindow: { min: periodo_evolucion }, format:"",  textStyle : { fontSize: 10 } },
+			});
+	}
+
+	function drawTable_Incidencias(year) {
+		var chart_calendar = new google.visualization.Calendar(document.getElementById('calendar_basic'));
+       var options = {
+         title: "Histograma de incidencias diarias",
+         calendar: {
+				dayOfWeekLabel: { fontName: 'Times-Roman', fontSize: 12, color: '#1a8763', bold: true, italic: true, },
+				daysOfWeek: 'DLMXJVS', cellSize: 13,
+			},
+			
+         height: "100%", 
+       };
+		chart_calendar.draw(d_total, options);
+       
+		var chart_pie_global = new google.visualization.PieChart(document.getElementById('pie_global'));
+		chart_pie_global.draw(d_pie_global, {
+			title: 'Incidencias global', height:"200", width:"200", chartArea: {width: '90%', height: '80%'},
+			});
+		var chart_pie_global_year = new google.visualization.PieChart(document.getElementById('pie_global_year'));
+		chart_pie_global_year.draw(d_pie_global_year, {
+			title: 'Incidencias '+year_actual, height:"200", width:"200", chartArea: {'width': '90%', 'height': '80%'},
+			});
+		var chart_pie_tiempos = new google.visualization.PieChart(document.getElementById('pie_tiempos'));
+		chart_pie_tiempos.draw(d_pie_tiempos, {
+			title: 'Tiempos resolucion '+year_actual, height:"200", width:"200", chartArea: {'width': '90%', 'height': '80%'},
+			});
+
+		drawEvolucion();
+
+		var chart_mensual_resueltas = new google.visualization.ColumnChart(document.getElementById('graph_month_res'));
+		chart_mensual_resueltas.draw(d_mensual_resueltas, {
+			title: 'Incidencias x Mes (Resueltas y pendientes) - 2017', 
+			legend: { position: 'top', maxLines: 1, textStyle : { fontSize: 8 } },
+			chartArea: { left:45, width:'95%'},
+			'focusTarget': 'category',
+			isStacked: true, bar: {groupWidth: "90%"},
+			hAxis: hAxis_mensual_options
+		});			
+
+		var chart_mensual_total = new google.visualization.ColumnChart(document.getElementById('graph_month_tpvs'));
+		chart_mensual_total.draw(d_mensual_total, {
+			title: 'Incidencias Resueltas x Nivel '+year_actual+' (TPVs + VELA)',
+			isStacked: true,
+			legend: { position: 'top', maxLines: 1, textStyle : { fontSize: 8 } },
+			chartArea: { left:45, width:'95%'}, 
+			'focusTarget': 'category',
+			bar: {groupWidth: "90%"},
+			hAxis: hAxis_mensual_total_options
+		});	
+
+		var chart_mensual_pendientes = new google.visualization.ColumnChart(document.getElementById('graph_month_pend'));
+		chart_mensual_pendientes.draw(d_mensual_total_pendientes, {
+			title: 'Incidencias Pendientes x Nivel '+year_actual+' (TPVs + VELA)',
+			isStacked: true,
+			legend: { position: 'top', maxLines: 1, textStyle : { fontSize: 8 } }, 
+			chartArea: { left:45, width:'95%'},
+			bar: {groupWidth: "90%"},
+			'focusTarget': 'category',
+			hAxis: {
+				viewWindow: { min: 0 },
+				textStyle: { fontSize: 10 },
+				gridlines: {color: '#333', count: -1}
+			},
+		});
+/*
+		var graph_inci_total_resu = new google.visualization.BarChart(document.getElementById('inci_total_resu'));
+		graph_inci_total_resu.draw(d_inci_total_resu, {
+			title: 'Resolucion x Niveles ('+year_actual+')',
+			legend: { position:'none'},
+			isStacked: true, 'focusTarget': 'category', chartArea: {left:40, 'width': '60%', 'height': '60%'} });
+*/
+		var graph_inci_total_resu_todos = new google.visualization.BarChart(document.getElementById('inci_total_resu_todos'));
+		graph_inci_total_resu_todos.draw(d_inci_total_resu_todos, {
+			title: 'Resolucion x Niveles - TPVS (TODOS)',
+			legend: { position:'none'}, isStacked: true, 'focusTarget': 'category', height:"280",chartArea: {left:40, 'width': '60%', 'height': '70%'} });
+		var graph_inci_total_resu_todos_vela = new google.visualization.BarChart(document.getElementById('inci_total_resu_todos_vela'));
+		graph_inci_total_resu_todos_vela.draw(d_inci_total_resu_todos_vela, {
+			title: 'Resolucion x Niveles - VELA (TODOS)',
+			legend: { position:'none'}, isStacked: true, 'focusTarget': 'category', height:"280",width:"200",chartArea: {left:40, 'width': '60%', 'height': '70%'} });
+
+		var graph_inci_total_pend = new google.visualization.BarChart(document.getElementById('inci_total_pend'));
+		graph_inci_total_pend.draw(d_inci_total_pend, {
+			title: 'Pendientes x Niveles ('+year_actual+')',
+			legend: { position:'none'},
+			isStacked: true, 'focusTarget': 'category', chartArea: {left:40, 'width': '60%', 'height': '60%'} });
+
+		return;
+
+	}
+	
+	google.charts.setOnLoadCallback(drawCharts_Incidencias);
+	$("#select_evolucion").change();
+
+	$("#jqGrid1").jqGrid({
+			caption: '- LISTADO DE INCIDENCIAS -',
+			url: "/Resources/Estado_Monitorizacion/Incidencias/json_incidencias.php?opcion=listado_total",
+			mtype: "GET",
+			datatype: "json",
+			colModel:
+			[
+				{ index: 'ID', 			name: 'ID',     		label:'Inc.ID', key: true, width: 30 },
+				{ index: 'TITULO', 		name: 'TITULO', 		label:'Titulo', width: 200 },
+				{ index: 'FECHGRAB', 	name: 'FECHGRAB',		label:'F.Grabacion',  width: 50 },
+				{ index: 'FECHRESO', 	name: 'FECHRESO',    label:'F.Resolucion', width: 50 },
+				{ index: 'CODIRESO', 	name: 'CODIRESO',  	label:'Cod. Resolucion', width: 80 },
+				{ index: 'ELEMPROD', 	name: 'ELEMPROD',    label:'Elem.Prod.', width: 50 },
+				{ index: 'TIPOPROBL', 	name: 'TIPOPROBL', 	label:'Tipo Problema', width: 80 },
+				{ index: 'DIANIVEMAX', 	name: 'DIANIVEMAX', 	label:'Max.Nivel', width: 20 },				
+				{ index: 'PRIORIDAD', 	name: 'PRIORIDAD', 	label:'Prioridad', width: 20 },
+				{ index: 'DIANIVEACTU',	name: 'DIANIVEACTU',	label:'Niv.Actual', width: 20 },
+				{ index: 'ASIGNADO', 	name: 'ADIGNADO', 	label:'Asignado a', width: 50 },
+				{ index: 'ESTADO', 		name: 'ESTADO',	 	label:'Estado', width: 50 },
+				{ index: 'VERSINST', 	name: 'ESTADO', 		label:'Vers.Inst.', width: 50 },
+				{ index: 'DEFECTO', 		name: 'DEFECTO', 		label:'Defecto', width: 50 },
+				{ index: 'SERVICIO', 	name: 'SERVICIO', 	label:'Servicio', width: 50 }
+			],
+			sortname:"ID", gridview: true, viewrecords: true, page: 1,
+			height:650, autowidth:false, width:"2000px",
+			rowNum: 50,
+			scroll: 1, // set the scroll property to 1 to enable paging with scrollbar - virtual loading of records
+			pager: "#jqGridPager",
+			search: true, refresh: true, sortable: true, shrinkToFit: false,
+		});
+
+		$('#jqGrid').jqGrid('filterToolbar',{ stringResult: true });
+		$('#jqGrid').navGrid("#jqGridPager", { search: true, edit:false, add:false, del:false, refresh: true })
+		.navSeparatorAdd("#jqGridPager",{})
+		.navButtonAdd('#jqGridPager',{
+			caption:"Excel",
+			title:"Permite salvar el listado total en formato CSV para ser cargado por hojas de calculo",
+			buttonicon:"ui-icon-document",
+			onClickButton : function () { 
+				window.open(url+"&csv=1", '');
+			}
+		})
+		.navSeparatorAdd("#jqGridPager",{});
+
+
+</script>

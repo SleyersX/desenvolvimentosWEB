@@ -1,0 +1,7 @@
+$Array_Listados_v2=array(
+	// "NOMBRE DE OPCION" => array(script_name, <Sub_Actual|NULL>, <Item|NULL>)
+
+	"Par-03. Listado Formas de pago" => array("listado_formas_pago.sh", NULL, NULL),
+	"Fic-13. Listado de concesiones" => array("listado_concesiones.sh", "list_concesion", "CONCESION")
+
+);

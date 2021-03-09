@@ -1,0 +1,194 @@
+<title>GENERAL</title>
+<?php
+require("../../cabecera_vistas.php");
+
+function ROJO($Texto) {  return "CONCAT('<font color=red><b>',$Texto,'</b></font>')"; }
+function VERDE($Texto) { return "CONCAT('<font color=darkgreen><b>',$Texto,'</b></font>')"; }
+
+$Vers_Conex="CONCAT('(',$Conexion,') ',IF($Table.Version IS NULL, 'Nunca accedido', $Table.Version))";
+
+$Queries["FIDE_ONLINE"]=array ( "FIDEL.ONLINE",
+	array("STATUS", "SUBTIPO", "Fichero","Cantidad"),
+	"select a.DAT5,IF(c.subtipo='EL ARBOL','EL ARBOL','OTRO'),b.DAT_ADIC1,count(*) from $Table a join Solo_DATS b ON a.tienda=b.tienda and a.caja=b.caja join tiendas c ON b.tienda=c.numerotienda where a.conexion=1 group by 1,2,3",
+	NULL,
+	"");
+
+// $md5sum=exec("md5sum /home/MULTI/files_to_copy/root/102_createPopulationDailyDashboard.sh_to_initd | cut -b1-5");
+// $Queries["WSD"]=array ( "Version WSD",
+// 	array("Version", "Cantidad"), "select DAT_ADIC1,count(DAT_ADIC1) from Solo_DATS group by DAT_ADIC1", NULL, "");
+if (GetPais() == "ESP") {
+
+//	$Queries["DAT_ADIC5"]=array ( "ENCUESTAS A CLIENTES",
+//		array("Status", "Cantidad"), "select CASE Status WHEN 0 THEN 'NO ENVIO' WHEN 1 THEN 'SOLO CABECERA' WHEN 2 THEN 'TICKET COMPLETO' ELSE 'N/D' END, count(*) from EncuestasClientes group by 1", NULL, "ESP","");
+
+$Queries["Actualiz1"]=array ( "PEND.ACTUAL.", array("Actual", "bat200", "Auto","Masters","Esclavas","Total"),
+	"select
+		b.version, a.PKG, a.PKG_Auto, SUM(CASE WHEN a.Caja=1 THEN 1 ELSE 0 END), SUM(CASE WHEN a.Caja<>1 THEN 1 ELSE 0 END), concat('<b>',count(*),'</b>')
+		from Paquetes a JOIN $Table b on b.tienda=a.tienda and b.caja=a.caja where b.Version <> '' group by 1,2,3", NULL, "ESP");
+
+$Queries["HUBS"]=array ("HUB/SWITCH",
+	array("Tipo","Cantidad"),
+	"select hub 'HUB/SWITCH',count(*) from ChecksESP where caja=1 group by 1",
+	NULL,
+	"");
+
+$Queries["ADELANTO_VENTAS"]=array ("FASE ADELANTO VENTAS",
+	array("Version","Fase","Tiendas"),
+	"select version,fase,count(*) from Fase_Adelanto_Ventas a join tmpTiendas b on a.tienda=b.numerotienda and conexion and pais='ESP' group by version,fase",
+	NULL,
+	"ESP");
+
+	$Queries["FIDELIZACION"]=array ( "FIDELIZACION",
+		array("Status", "Masters","Esclavas"),
+			"select IF(Fide_Online,'Online','Offline'),SUM(CASE WHEN caja=1 THEN 1 ELSE 0 END) 'Masters', SUM(CASE WHEN caja<>1 THEN 1 ELSE 0 END) 'Esclavas' from Fidelizacion group by 1",
+		NULL, "","");
+
+	$Queries["PINPADS"]=array ("PINPADS",
+		array("Modelo", "Version SW PINPAD","Cantidad"),
+		"CREATE OR REPLACE VIEW tmpPINPAD as SELECT SUBSTRING_INDEX(PINPAD,'/',1) as Modelo, SUBSTRING_INDEX(PINPAD,'/',-1) as Version from $Table where Conexion=1;
+		SELECT
+			IF(Modelo IS NULL,'<hr><b>TOTAL PINPADS</b>', IF(Version IS NULL,'',Modelo)),
+			IF(Modelo IS NULL,'',IFNULL(Version, 'SUBTOTAL MODELO')),
+			count(*)
+		from tmpPINPAD group by Modelo, Version WITH ROLLUP",
+		NULL,
+		"ESP",
+		"NUMERO DE PINPADS POR MODELO\n\nEsta vista nos muestra una clasificacion por modelo y firmware de los PINPADs de la red\n");
+
+}
+
+$Queries["MISMA_IP"]=array ("Tiendas con mismo IP",
+	array("IP","Tienda"), "select  ip, GROUP_CONCAT(numerotienda SEPARATOR ' - ') from tiendas where IP like '10.%' and Pais='".GetPais()."' group by ip HAVING COUNT(ip)>=2", NULL, GetPais());
+
+$Queries["TIENDAS_ONLINE"]=array ( "CLASIF. FIDELIZACION",
+	array("Tipo", "Cantidad"), 
+		"select if(DAT5='0','OFFLINE',DAT5),count(*) from $Table WHERE caja=1 group by 1",
+		"", "ARG BRA POR CHI","Este listado muestra las tiendas (solo cajas master) con el tipo de fidelizacion: ONLINE o OFFLINE");
+
+if (GetPais() == "BRA") {
+
+	$Queries["IMPRESORAS"]=array ( "IMPRESORAS",
+		array("Tipo", "Cantidad"), "select DAT_ADIC3,count(*) from Solo_DATS group by DAT_ADIC3", NULL, "BRA");
+
+	$Queries["Kernel"]=array ( "Version Kernel",
+		array("Kernel","cantidad"), "select DAT2,count(DAT2) from $Table group by DAT2", NULL, "BRA");
+
+	$Queries["cups"]=array ( "Version cups-1.1.14-18",
+		array("cups-1.1.14-18","Version SA","Cantidad"), "select IF(DAT_ADIC2=1,'INSTALADO','NO INSTALADO'), b.version, count(*) from Solo_DATS a join tmpTiendas b on a.tienda=b.numerotienda where a.caja=1 group by 1,2", NULL, "BRA");
+
+	$Queries["CONTINGENCIA_SAT"]=array ("CONTINGENCIA SAT<br>Cantidad > 1",
+                array("Tienda", "Caja", "Cantidad"), "select tienda, caja, SAT from Contingencia where SAT>1", NULL, "BRA");
+	$Queries["CONTINGENCIA_NFCe"]=array ("CONTINGENCIA NFCe<br>Cantidad > 1",
+                array("Tienda", "Caja", "Cantidad"), "select tienda, caja, NFCe from Contingencia where NFCe>1", NULL, "BRA");
+}
+
+if ( GetPais() == "POR" ) {
+	$Queries["CALCULADO"]=array ("CALCULADO",
+		array("Tienda","Fecha<>0","Fecha=0"), "select Tienda, DAT_ADIC3,DAT_ADIC4 from Solo_DATS where caja=1 and DAT_ADIC3+DAT_ADIC4 > 0", NULL, "");
+}
+
+$B_1_1="<b style=\"font-size:1.1em\">";
+$Queries["MODELOS_TPV"]=array ("TPVs x MODELO",
+	array("Modelo","Cantidad"),
+	"select Modelo,count(*) from $Table where conexion=1 and modelo is not NULL  group by Modelo order by 2 desc;
+	 select '$B_1_1\TOTAL</b>',concat('$B_1_1',count(*),'</b>') from $Table where conexion=1 and modelo is not NULL",
+	NULL,
+	"ALL");
+
+
+/*
+$sum_fichero=md5_file("/home/pendserv/scripts/200_actu_pend_serv_v2.sh");
+$Queries["200_pend"]=array ("TIENDAS PREPARADAS<br>".substr($sum_fichero,0,8)."...",
+	array("ESTADO","Cantidad"),
+	"select IF(DAT_ADIC5='$sum_fichero','PREPARADA','NO PREPARADA'),count(*) from Solo_DATS where caja=1 group by 1",
+	NULL,
+	"ESP",
+	"Numero de tiendas con version pendiente de instalar");
+*/
+
+
+/*
+
+*/
+
+
+/* ----------------------------------------------------------------------------------------------------------------------------- */
+
+$tmpVersiones=array(); $Tabla_Subcentros_x_Versiones=array(); $sumVersiones=""; $sep="'<hr>'"; $sumVersionesTotal="";
+if ($Pais=="ESP" || $Pais=="PAR") {
+	$corte="06.90.04-p1";
+	$tmpVersiones[0]="<$corte";
+	$sumVersiones=",SUM(CASE WHEN version<'".$corte."' THEN 1 ELSE 0 END)";
+	$sumVersionesTotal=",SUM(CASE WHEN version<'".$corte."' THEN 1 ELSE 0 END)";
+} else {
+	$corte="";
+}
+$tmp=myQUERY("select distinct(version) from tmpTiendas where version>='$corte' AND centro <> 'SEDE' order by version;");
+
+foreach($tmp as $k => $d) {
+	$sumVersiones.=",SUM(CASE WHEN version='".$d[0]."' THEN 1 ELSE 0 END)";
+	$sumVersionesTotal.=",CONCAT('<b>',SUM(CASE WHEN version='".$d[0]."' THEN 1 ELSE 0 END),'</b>')";
+	$sep.=",'<hr>'";
+	$tmpVersiones[$k+1]=$d[0];
+}
+$sumVersiones.=", CONCAT('<b class=\"total\">', count(centro), '</b>')";
+$sumVersionesTotal.=", CONCAT('<b class=\"total\">', count(centro), '</b>')";
+$sep.=",'<hr>'";
+
+$Tabla_Versiones_x_Subcentro=myQUERY("
+	select centro ".$sumVersiones."  from tmpTiendas where Pruebas=0 group by centro;
+	select '<b>TOTAL CENTROS</b>' ".$sumVersionesTotal."  from tmpTiendas where Pruebas=0;");
+
+$Tabla_Vers_Subc_Tipo_Subt=myQUERY("select centro,tipo,subtipo ".$sumVersiones."  from tmpTiendas group by 1,2,3;");
+
+echo '<div class="PANEL">';
+echo '<table class="new_list">';
+echo '<caption>VERSIONES POR SUBCENTRO</caption>';
+echo '<thead><tr>';
+foreach(array_merge(array("CENTRO"),$tmpVersiones,array("TOTAL TDAs")) as $k => $d) {
+	echo "<th>$d</th>";
+}
+echo '</tr></thead>';
+foreach($Tabla_Versiones_x_Subcentro as $k => $d) {
+	echo "<tr>";
+	$tmp=myQUERY("select tipo ".$sumVersiones." from tmpTiendas where centro='".$d[0]."' AND Pruebas = 0 group by tipo");
+	foreach($d as $k1 => $d1) {
+		if ($k1 == 0) echo '<td class="new_center">';
+		else echo '<td class="new_right" style="padding-right:1em;">';
+		echo $d1;
+		echo '</td>';
+	}
+	echo "</tr>";
+}
+echo '</table>';
+echo '</div>';
+
+
+/* ----------------------------------------------------------------------------------------------------------------------------- */
+
+$Queries["Clasif_por_subtipo_tienda"]=array("CLASIFICACION POR SUBTIPO<br>(MAESTRO DE TIENDAS)",
+	array("TIPO","Cantidad"),
+	"select 'TOTAL TIENDAS',count(*) from tiendas where centro<>'SEDE' ;
+	 select '------------','------------';
+	 select distinct(subtipo), count(*) from tiendas where centro<>'SEDE' group by 1;
+	 select '<hr>','<hr>';
+	 select 'MAXI-III',count(*) from tiendas where tipoetiquetadora='DINA4' and subtipo='MAXIDIA' and centro<>'SEDE';
+	 select '<hr>','<hr>';
+	 select tipoetiquetadora,count(*) from tiendas where centro<>'SEDE' and tipoetiquetadora<>'' group by 1",
+	NULL,
+	"ALL");
+
+
+$Version = "CONCAT(Version, '(',$Conexion,')'";
+$Queries["Clasif_por_tipo_vers"]=array("CLASIFICACION POR TIPO/VERSION",
+	array("TIPO","VERSION","Cantidad"),
+	"select CONCAT(tipo,'-',subtipo), $Vers_Conex, count(*) from tiendas, $Table where Numerotienda=Tienda and Caja=1 and Pais='$Pais' group by 1,2 order by 1,2",
+	NULL,
+	"ALL");
+
+
+if (isset($Queries))
+	foreach ($Queries as $key => $dato) {
+		Show_data2($key, $dato); echo PHP_EOL;
+	}
+?>

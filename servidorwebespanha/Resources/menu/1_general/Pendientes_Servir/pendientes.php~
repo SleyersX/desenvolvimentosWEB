@@ -1,0 +1,254 @@
+<?php
+function get_Date_to_chart($fecha) {
+	$y=substr($fecha, 0, 4); $m=substr($fecha, 4, 2); $d=substr($fecha, 6, 2);
+	return "new Date (".$y.",".($m-1).",".$d.")";
+}
+
+if (!empty($_GET["opcion"])) {
+	$DIR_PENDSERV="/home/pendserv/bra";
+	$t1=array();
+	switch(@$_GET["opcion"]) {
+		case "total_tiendas":
+			shell_exec("cd $DIR_PENDSERV; sudo bash genera_datos.sh");
+			$tmp=file_get_contents($DIR_PENDSERV."/total_tiendas.dat");
+			$t_tmp=explode("\n", $tmp);
+			$json["cols"]=array(
+				array('label' => 'Tienda', 'type' => 'number'),
+				array('label' => 'Pedidos', 'type' => 'number'),
+				array('label' => 'Entregas', 'type' => 'number')
+			);
+			$rows = array();
+			foreach($t_tmp as $d) {
+				if ($d) {
+					list($tienda,$entregas,$pedidos)=explode(";",$d);
+					$rows[] = array('c' => array( array('v' => $tienda),array('v' => $pedidos),array('v' => $entregas)));
+				}
+			}
+			break;
+
+		case "datos_por_tienda":
+			if ($_GET["tienda"] == "TODAS LAS TIENDAS")
+				$tmp=file_get_contents($DIR_PENDSERV."/total_total_movim");
+			else 
+				$tmp=file_get_contents($DIR_PENDSERV."/".sprintf("%05d",$_GET["tienda"]).".total_movim");
+			$t_tmp=explode("\n", $tmp);
+			foreach($t_tmp as $d) {
+				if ($d) { list($fecha,$pedidos,$entregas)=explode(";",$d); @$t1[$fecha][0]+=$pedidos; @$t1[$fecha][1]+=$entregas; }
+			}
+			$json["cols"]=array(
+				array('label' => 'Fecha', 'type' => 'date'),
+				array('label' => 'Pedidos', 'type' => 'number'),
+				array('label' => 'Entregas', 'type' => 'number')
+			);
+			$rows = array();
+			foreach($t1 as $fecha => $d) {
+				$year=substr($fecha, 0, 4); $mes=substr($fecha, 4, 2); $dia=substr($fecha, 6, 2);
+				$rows[] = array('c' => array( array('v' => "Date($year,".($mes-1).",$dia)"), array('v' => $d[0]), array('v' => $d[1])));
+			}
+			break;
+
+		case "detalle_datos_por_tienda_total":
+			$tienda=sprintf("%05d",$_GET["tienda"]);
+			$tmp=file_get_contents($DIR_PENDSERV."/".$tienda.".total_movim_x_arti");
+			$t_tmp=explode("\n", $tmp);
+			foreach($t_tmp as $d) {
+				if ($d) { list($arti,$pend,$pedi,$entr)=explode(";",$d); @$t1[$arti][0]+=$pend; @$t1[$arti][1]+=$pedi; @$t1[$arti][2]+=$entr; }
+			}
+
+			$json["cols"]=array(
+				array('label' => 'Articulo', 'type' => 'number'),
+				array('label' => 'Pendientes', 'type' => 'number'),
+				array('label' => 'Pedidos', 'type' => 'number'),
+				array('label' => 'Entregas', 'type' => 'number'),
+				array('label' => 'Diferencia', 'type' => 'number')
+			);
+			$rows = array();
+			foreach($t1 as $arti => $d) {
+				if ($d[0] != ($d[1]-$d[2])) { 
+					$rows[] = array('c' => array( array('v' => $arti), array('v' => $d[0]), array('v' => $d[1]), array('v' => $d[2]), array('v' => $d[0]-($d[1]-$d[2]))));
+				}
+			}
+			break;
+
+		case "detalle_datos_por_tienda_total_x_arti":
+			$tienda=sprintf("%05d",$_GET["tienda"]);
+			$tmp=file_get_contents($DIR_PENDSERV."/".$tienda.".total_total_movim_x_arti");
+			$t_tmp=explode("\n", $tmp);
+			foreach($t_tmp as $d) {
+				if ($d) { list($arti,$pend,$pedi,$entr)=explode(";",$d); @$t1[$arti][0]+=$pend; @$t1[$arti][1]+=$pedi; @$t1[$arti][2]+=$entr; }
+			}
+
+			$json["cols"]=array(
+				array('label' => 'Fecha', 'type' => 'date'),
+				array('label' => 'Pedidos', 'type' => 'number'),
+				array('label' => 'Entregas', 'type' => 'number')
+			);
+			$rows = array();
+			foreach($t1 as $arti => $d) {
+				if ($d[0] != ($d[1]-$d[2])) {
+					$year=substr($fecha, 0, 4); $mes=substr($fecha, 4, 2); $dia=substr($fecha, 6, 2); 
+					$rows[] = array('c' => array( array('v' => $arti), array('v' => $d[0]), array('v' => $d[1]), array('v' => $d[2])));
+				}
+			}
+			break;
+
+	}
+	$json["rows"]=$rows;
+	echo json_encode($json,JSON_NUMERIC_CHECK);
+	exit;
+}
+
+require_once("/home/soporteweb/config.php");
+if (!empty($_GET["xxx"])) {
+//	require_once($DOCUMENT_ROOT.$DIR_RAIZ.'/tools/mysql.php');
+	require_once($DOCUMENT_ROOT.$DIR_RAIZ.'/library/google_charts.php');
+	require_once($DOCUMENT_ROOT.$DIR_RAIZ.'/library/jquery.php');
+}
+
+?>
+<style>
+	.pend { height: 800px;}
+	#div_pendientes {
+		background-color: white;
+		border:1px solid black; border-radius: 2px;
+	}
+	.panel_pend {
+		border:1px solid blue; border-radius: 2px;
+		padding:3px; margin:3px;
+		height: 260px;
+	}
+	.con_borde { border: 1px solid #ccc; }
+
+	#panel_1 div { height: 250px; }
+	#graph_total_tiendas { width: 800px;}
+
+	#panel_2 div { height: 250px; }
+	#graph_movim_tienda { width: 900px;}
+
+	#panel_3 div { height: 250px; }
+	#graph_movim_tienda_x_arti { width: 900px;}
+
+	.float { float: left;}
+	.header_pend {
+		background-color: lightgray;
+		font-family: sans-serif, arial;
+	}
+	#div_pendientes a {
+		text-decoration: none;
+	}
+
+</style>
+
+<div id="div_pendientes">
+	<table style="width:100%;">
+		<tr class="header_pend">
+			<td colspan="3"><a>Informacion general de las tiendas. <i style="font-size:80%">Seleccione una tienda para acceder a sus datos</i></a></td>
+		</tr>
+		<tr id="panel_1">
+			<td style="vertical-align:top"><div class="con_borde" id="lista_total_tiendas"></div></td>
+			<td><div class="con_borde" id="graph_total_tiendas"></div></td>
+			<td><div class="con_borde">
+				<h2>Opciones:</h2>
+			</div></td>
+		<tr>
+	</table>
+
+	<table class="con_borde" style="width:99%;margin-left:3px;">
+		<tr class="header_pend">
+			<td colspan="2"><a>Informacion diaria de <span id="info_tienda"></span>. <i style="font-size:75%;">Click en linea tabla anterior para ver mas datos</i></a></td>
+		</tr>
+		<tr id="panel_2">
+			<td><div id="lista_movim_tienda"></div></td>
+			<td><div id="graph_movim_tienda"></div></td>
+		</tr>
+	</table>
+
+	<table class="con_borde" style="width:99%;margin-left:3px;">
+		<tr class="header_pend">
+			<td colspan="2"><a id="info_por_tienda">Seleccione una tienda en la tabla inicial</a></td>
+		</tr>
+		<tr id="panel_3">
+			<td><div class="float" id="lista_movim_tienda_x_arti"></div></td>
+			<td><div class="float" id="detalle_movim_tienda_x_arti"></div></td>
+		</tr>
+	</table>
+</div>
+
+<script>
+	function drawChartsPendientes() {
+		show_tiendas();
+		show_por_tienda(-1);
+	}
+	
+	var local_url='/Resources/menu/1_general/Pendientes_Servir/pendientes.php';
+	var Lista_Tiendas,Lista_Entregas,Lista_Detalle_Tienda;
+	var Tabla_Tiendas, Tabla_Entregas;
+
+	function show_tiendas() {
+		var jsonData = $.ajax({ url: local_url, data: { "opcion":"total_tiendas"}, dataType: "json", async: false }).responseText;
+		Lista_Tiendas=new google.visualization.DataTable(jsonData);
+
+		Tabla_Tiendas = new google.visualization.Table(document.getElementById('lista_total_tiendas'));
+		Tabla_Tiendas.draw(Lista_Tiendas);
+		google.visualization.events.addListener(Tabla_Tiendas, 'select', function () {
+			show_por_tienda(Tabla_Tiendas.getSelection()[0].row);
+		});
+
+		var Graph_Tiendas = new google.visualization.ChartWrapper({
+			'chartType': 'ColumnChart',
+			'containerId': 'graph_total_tiendas',
+			'options': { 'width':'100%' , 'title': 'INFORMACION GLOBAL DE LAS TIENDAS (ARTICULOS PEDIDOS / ARTICULOS ENTREGADOS)' },
+			dataTable:Lista_Tiendas,
+			'view': {'columns': [{column:0, label: Lista_Tiendas.getColumnLabel(0), calc:function (dt, row) {return dt.getValue(row,0).toString();}, type:"string"},1,2]}
+		});
+		Graph_Tiendas.draw();
+
+//		var view1=new google.visualization.DataView(Lista_Tiendas);
+//		view1.setColumns([{column:0, label: Lista_Tiendas.getColumnLabel(0), calc:function (dt, row) {return dt.getValue(row,0).toString();}, type:"string"},1,2]);
+//		Graph_Tiendas = new google.visualization.ColumnChart(document.getElementById('graph_total_tiendas'));
+//		Graph_Tiendas.draw(view1, { width:"100%"});
+	}
+	
+	function show_por_tienda(row) {
+		if (row > -1) var tienda=Lista_Tiendas.getValue(row,0);
+		else var tienda="TODAS LAS TIENDAS";
+		$("#info_tienda").html(tienda);
+		
+		var opciones={ "opcion":"datos_por_tienda","tienda": tienda};
+		var jsonData = $.ajax({ url: local_url, data: opciones, dataType: "json", async: false }).responseText;
+		var Lista_Tienda=new google.visualization.DataTable(jsonData);
+		Lista_Tienda.sort(0);
+		var Tabla_Tienda = new google.visualization.Table(document.getElementById('lista_movim_tienda'));
+		Tabla_Tienda.draw(Lista_Tienda);
+
+		var view2= new google.visualization.DataView(Lista_Tienda);
+		var graph_Tabla_Tienda = new google.visualization.LineChart(document.getElementById('graph_movim_tienda'));
+		graph_Tabla_Tienda.draw(view2, { width:"100%"});
+		
+
+		if (row > -1) {
+			$("#info_por_tienda").html("Informacion de las pendientes de servir, pedidos y entregas por cada articulo, de la tienda "+tienda+" desde el 01/01/2018");
+			var opciones={ "opcion":"detalle_datos_por_tienda_total","tienda":tienda};
+			var jsonData = $.ajax({ url: local_url, data: opciones, dataType: "json", async: false }).responseText;
+			var Lista_Detalle_Tienda=new google.visualization.DataTable(jsonData);
+			Lista_Detalle_Tienda.sort(0);
+			var Tabla_Detalle_Tienda = new google.visualization.Table(document.getElementById('lista_movim_tienda_x_arti'));
+			Tabla_Detalle_Tienda.draw(Lista_Detalle_Tienda);
+			google.visualization.events.addListener(Tabla_Detalle_Tienda, 'select', function () {
+				console.log(Lista_Tiendas.getValue(row,0),Tabla_Detalle_Tienda.getSelection()[0].row);
+				show_por_tienda_x_arti(Lista_Tiendas.getValue(row,0),Tabla_Detalle_Tienda.getSelection()[0].row);
+			});
+		}		
+	}
+	
+	function show_por_tienda_x_arti(tienda,row) {
+		var opciones={ "opcion":"detalle_datos_por_tienda_total_x_arti","tienda":tienda, "arti":Lista_Detalle_Tienda.getValue(row,0)};
+		var jsonData = $.ajax({ url: local_url, data: opciones, dataType: "json", async: false }).responseText;
+		var Lista_Detalle_Arti=new google.visualization.DataTable(jsonData);
+		Lista_Detalle_Arti.sort(0);
+		var Tabla_Detalle_Articulo = new google.visualization.Table(document.getElementById('detalle_movim_tienda_x_arti'));
+		Tabla_Detalle_Articulo.draw(Lista_Detalle_Articulo);
+	}
+
+	google.charts.setOnLoadCallback(drawChartsPendientes);
+</script>

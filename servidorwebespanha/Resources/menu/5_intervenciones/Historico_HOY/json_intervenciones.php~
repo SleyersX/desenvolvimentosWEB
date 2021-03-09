@@ -1,0 +1,128 @@
+<?php
+require_once($_SERVER['DOCUMENT_ROOT']."/config.php");
+
+switch (@$_GET["opcion"]) {
+	case "Resumen_Intervenciones":
+		$tmp="No hay informacion";
+		$sql=myQUERY("select Comentario,tipo,count(*) from Historico where date(fecha)=CURRENT_DATE group by 1 order by 2,3 desc");
+		if (count($sql)>0) {
+			$subArray1=array(); $tmp1=array(0,0,0,0); 
+			//$tmp1=array("INST/ACTU"=>0, "INTERV"=>0, "ERRORES"=>0, "VARIOS"=>0);
+			foreach($sql as $k => $d) {
+				list($texto, $tipo, $cant) = $d;
+				$subArray1[]=array("texto"=>$texto, "tipo"=>$tipo, "cant"=>$cant);
+				$tmp1[$tipo]+=$cant;
+			}
+			$subArray2=array();
+			foreach($tmp1 as $k => $d) $subArray2[]=array("tipo"=>$k, "cant"=>$d); 
+
+			$json["Resumen"]=$subArray1;
+			$json["Resumen_Pie"]=$subArray2;
+		}
+
+		$data = myQUERY("select date_format(FROM_UNIXTIME(600 * FLOOR(UNIX_TIMESTAMP(fecha)/600)),'%H:%i'),SUM(CASE WHEN tipo=1 THEN 1 ELSE 0 END) as Interv,SUM(CASE WHEN tipo=2 THEN 1 ELSE 0 END) as Instal, SUM(CASE WHEN tipo=3 THEN 1 ELSE 0 END) as Errores, SUM(CASE WHEN tipo=0 THEN 1 ELSE 0 END) as Otros  from Historico where date(fecha)=CURRENT_DATE group by 1 order by 1");
+		if (empty($data)) {
+			header('status: 400 Bad Request', true, 400);
+		} else {
+			$subArray=array();
+			foreach($data as $k => $d) {
+				list($time, $interv, $instal, $errores, $otros)=$d;
+				$subArray[]=array("hora"=>$time, "interv"=>$interv, "instal"=>$instal, "errores"=>$errores, "otros"=>$otros); 
+			}
+			$json["get_totals"]=$subArray;
+		}
+		break;
+				
+	case "Historico":
+		$start=(empty($_GET["start"])?1:$_GET["start"]); $limit=(empty($_GET["limit"])?25:$_GET["limit"]);
+		$query="select a.Tienda, a.Caja, c.Version, a.Fecha, b.centro, b.tipo, b.subtipo, a.Comentario 
+			from Historico a
+				join tmpTiendas b on a.tienda=b.numerotienda
+				LEFT join Checks$Pais c on a.tienda=c.tienda AND a.Caja=c.Caja
+			where date(fecha)=date(NOW()) and b.pais='$Pais' order by a.Fecha desc,a.Tienda,a.Caja limit ".$start.",".$limit;
+		//if ($Pais!="ESP") echo $query;
+		$sql = myQUERY($query);
+
+		if (count($sql)>1) {
+			$tmp="<table id='t_historico_hoy' class='tabla2'><tr><th>Tienda</th><th>Caja</th><th>Version</th><th>Fecha</th><th>Centro</th><th>Tipo</th><th>Subtipo</th><th>Comentario</th></tr>";
+			foreach($sql as $d) {
+				$clase="";
+				if (preg_match("/INTERVENCION/", $d[7])) $clase="Intervencion";
+				if (preg_match("/INSTALACION/", $d[7])) $clase="Instalacion'";
+				if (preg_match("/ERROR/", $d[7])) $clase="ERROR";
+				$tmp.="<tr class='$clase'>"; foreach($d as $d1) { $tmp.="<td>".$d1."</td>"; };
+				$tmp.="</tr>";
+			}
+			$tmp.="</table>";
+		}
+		else {
+			$tmp="<div style='border:1px solid black; background-color:yellow; border-radius:2px; text-align:center;'>No hay entradas aún</div>";
+		}
+		echo $tmp;
+		exit;
+		
+	case "Actu_Futu":
+		switch ($hsr_config->pais) {
+			case "ESP":
+			case "BRA":
+			case "POR":
+				$file_checklist="/home/soporteweb/tmp/futuras_versiones/checklist.dat";
+				$sql=myQUERY("select md5sum, sum(case when caja=1 then 1 else 0 end) as m, sum(case when caja>1 then 1 else 0 end) as s, count(*) from Versiones_Futuras group by 1 order by 4 desc");
+				$res1="";
+				if (file_exists($file_checklist))
+					$res1=file_get_contents($file_checklist);
+				$tmp="<table id='t_actu_futu_hoy' class='tabla2'><tr><th>Actu. Futu.($res1)</th><th>Master</th><th>Esclavas</th><th>TOTAL</h></tr>";
+				foreach($sql as $d) {
+					if ($res1 == $d[0]) $clase="style='background-color:lightgreen;'"; else $clase="";
+					$tmp.="<tr $clase>"; foreach($d as $d1) { $tmp.="<td>".$d1."</td>"; }; $tmp.="</tr>"; }
+				$tmp.="</table>";
+				echo $tmp;
+				break;
+			default:
+				echo "No implementado en este pais";
+		}
+		exit;
+
+	case "get_totals_pie":
+		exit;
+
+	case "get_totals_2":
+//		) > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+		$data = myQUERY("select FROM_UNIXTIME(600 * FLOOR(UNIX_TIMESTAMP(fecha)/600)), count(*) from Historico where DATE(Fecha) = DATE(NOW()) group by FROM_UNIXTIME(600 * FLOOR(UNIX_TIMESTAMP(fecha)/600))");
+		if (empty($data)) {
+			header('status: 400 Bad Request', true, 400);
+		} else {
+			$subArray=array();
+			foreach($data as $k => $d)
+				$subArray[]=array("hora"=>$d[0], "valor"=>$d[1]); 
+			$json["get_totals"]=$subArray;
+		}
+		break;
+
+	case "get_totals":
+//		) > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+		$data = myQUERY("select FROM_UNIXTIME(600 * FLOOR(UNIX_TIMESTAMP(fecha)/600)), count(*) from Historico where DATE(Fecha) = DATE(NOW()) group by FROM_UNIXTIME(600 * FLOOR(UNIX_TIMESTAMP(fecha)/600))");
+		if (empty($data)) {
+			header('status: 400 Bad Request', true, 400);
+		}
+		@$responce->records = count($data);
+		$responce->cols=array(
+			array ( "id"=>'Intervalo', "label"=>'Intervalo', "type"=>'datetime'),
+			array ( "id"=>'Cantidad',   "label"=>'Cantidad', "type"=>'number')
+		);
+
+		foreach($data as $k => $d) {
+			$temp = array();
+				$year=date("Y", strtotime($d[0]));
+				$month=date("m", strtotime($d[0]));
+				$day=date("d", strtotime($d[0]));
+				$time=date("H,i", strtotime($d[0]));
+			$temp[] = array('v' => "Date(".$year.",".($month-1).",".$day.",".$time.",0)");
+			$temp[] = array('v' => (int) $d[1]); 
+			$responce->rows[]=array('c' => $temp);
+		}
+		$json = json_encode($responce, JSON_NUMERIC_CHECK);
+		exit($json);
+}
+
+echo json_encode($json, JSON_NUMERIC_CHECK);

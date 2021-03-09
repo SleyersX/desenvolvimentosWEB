@@ -1,0 +1,5 @@
+wsd.log
+      32.77K   0%    0.00kB/s    0:00:00       557.06K  13%  468.01kB/s    0:00:07         1.08M  26%  460.22kB/s    0:00:06         1.61M  40%  454.30kB/s    0:00:05         2.13M  53%  451.70kB/s    0:00:04         2.65M  66%  448.14kB/s    0:00:03         3.18M  79%  446.87kB/s    0:00:01         3.70M  92%  448.14kB/s    0:00:00         4.01M 100%  477.76kB/s    0:00:08 (xfer#1, to-check=0/1)
+
+sent 257.31K bytes  received 31 bytes  24.51K bytes/sec
+total size is 4.01M  speedup is 15.57

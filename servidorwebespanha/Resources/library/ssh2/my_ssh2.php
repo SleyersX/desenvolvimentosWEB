@@ -1,0 +1,684 @@
+<?php
+ini_set('display_errors', true);
+error_reporting(E_ALL);
+set_time_limit(5);
+
+$Lista_funciones=array("ssh2_connect","ssh2_auth_password","ssh2_sftp","ssh2_exec");
+foreach($Lista_funciones as $funcion)
+	if (!function_exists($funcion)) die(Alert("error","No esta definido $funcion...<br>Avise al administrador."));
+
+function IF_ERROR($Comprobar, $Cadena) {
+	if (!$Comprobar) die ("<b>ERROR:</b> $Cadena<br>");
+}
+
+if (!function_exists("ERROR")) {
+	function ERROR($Texto) { return '<b style="color:red">ERROR: '.$Texto.'</b>'; }
+}
+if (!function_exists("_ECHO")) {
+	function _ECHO($Texto) { echo $Texto; flush(); @ob_flush(); }
+}
+
+function my_ssh_disconnect($reason, $message, $language) {
+	printf("Servidor desconectado con el siguiente código [%d] y mensaje: %s\n", $reason, $message);
+}
+
+class SFTPConnection
+{
+
+	const DEFAULT_TIMEOUT = 20;
+
+	private $connection, $sftp, $ssh2_sftp;
+	private $host, $port, $username, $password;
+	private $log, $filelog;
+	private $shell;
+	private $tunel;
+
+	public $NumeTPVs;
+	public $SA;
+
+	public $tienda, $caja, $bat23, $HoraTPV;
+	public $VELA=0;
+	public $version;
+	public $error;
+	public $pais;
+	public $capturador, $versionMinimal;
+
+	private $verbose=0;
+
+	private $DIR_DE=array(
+		"NA" => "/usr/local/n2a/var/data/devices/electronicJournal/",
+		"SA" => "/confdia/DE/");
+	private $DIR_DE_HISTORY="/usr/local/n2a/var/data/devices/electronicJournal/history/";
+	private $Opciones_SSH="-o StrictHostKeyChecking=no -o ConnectTimeout=3";
+
+	protected $stream;
+	protected $timeout = self :: DEFAULT_TIMEOUT;
+
+	//DATOS VARIOS NECESARIOS.
+	public $CantItem, $CantAsig;
+
+public function set_verbose($new_verbose) {
+	$this->verbose=$new_verbose;
+}
+
+private function status_conexion() {
+	echo "<pre>
+		 Conexion: $connection, SFTP: $sftp, SSH2_SFTP: $ssh2_sftp\n
+		 HOST: $host, PORT: $port, USER: $username, PASS: $password\n
+		 NumeTPVs: $NumeTPVs, SA: $SA, Tienda: $tienda, Caja: $caja, HoraTPV: $HoraTPV\n
+		</pre>";
+}
+
+private function my_ssh_disconnect($reason, $message, $language) {
+	printf("Server disconnected with reason code [%d] and message: %s\n", $reason, $message);
+}
+
+private $methods = array(
+	'kex' => 'diffie-hellman-group1-sha1',
+	'client_to_server' => array(
+		'crypt' => '3des-cbc',
+		'comp' => 'none'),
+	'server_to_client' => array(
+		'crypt' => 'aes256-cbc,aes192-cbc,aes128-cbc',
+		'comp' => 'none'));
+
+private $callbacks = array('disconnect' => 'my_ssh_disconnect');
+
+public function getLastError() { return $this->log; }
+
+public function LOG($Texto) {
+	if (!$this->verbose) return;
+	$this->log=$Texto;
+	echo '<script>javascript:Estado(\''.$Texto.'\');</script>';
+	flush(); @ob_flush();
+}
+
+private function ERROR($Texto) {
+	if (!$this->verbose) return;
+	echo '<b style="color:red">FATAL ERROR: '.$Texto.'</b>'; flush(); @ob_flush();
+}
+
+public function PROGRESO($Valor) {
+	if (!$this->verbose) return;
+	echo '<script>javascript:Progreso('.$Valor.'); </script>';
+	flush(); @ob_flush();
+}
+
+function myERROR2($Texto) {
+	if (!$this->verbose) return;
+	echo Alert("error", $Texto); _FLUSH();
+}
+
+function myERROR($Texto) {
+	global $Pais;
+	$this->log="Error ".$Texto;
+	if (!$this->verbose) return;
+	echo '<script>javascript:ERROR_CONEXION(\''.$Texto.'\');</script>';	
+	flush(); @ob_flush();
+}
+
+private function getPing($addr) 
+{
+	$exec = exec("ping -q -c1 -w3 ".$addr." >/dev/null && echo 1 || echo 0");
+	return ($exec=="1");
+}
+
+private function Crear_Vistas() {
+	$this->mysql("create or replace view tmpListArti as select ITEM_ID as ARTICULO, a.DESCRIPTION as DESCRIPCION, IF(USAGE_FLAG,'SI','NO') as ACTIVO,IF(SALE_FLAG,'SI','NO') as VENTA, POS_DEPARTMENT_ID as DPTO, d.DESCRIPTION as CATEGORIA, c.MERCHANDISE_HIERARCHY_GROUP_CODE as GRUPO, b.DESCRIPTION as TIPOARTI from ITEM a JOIN ITEM_TYPE b ON a.ITEM_TYPE_ID=b.ITEM_TYPE_ID JOIN MERCHANDISE_HIERARCHY_GROUP c ON a.MERCHANDISE_HIERARCHY_GROUP_ID=c.MERCHANDISE_HIERARCHY_GROUP_ID JOIN CATEGORY d ON a.CATEGORY_ID=d.CATEGORY_ID");
+	return true;
+}
+
+private function Actualiza_Datos($Check=0) {
+	$this->caja=0; $this->tienda=0; $this->NumeTPVs=0; $this->SA=0;
+	$this->putLog($this->connection);
+	if (!$this->connection) { return false; }
+
+	$this->SA=$this->cmdExec("[ -d /confdia/bin ] && echo 1 || echo 0");
+	$this->putLog($this->SA);
+	if ($this->SA==0) {
+		$this->NumeTPVs=$this->cmdExec('echo "select count(*) from WORKSTATION where ACTIVE_STATUS_FLAG=1" | mysql n2a | tail -1');
+		$res=$this->cmdExec('[ -z "$TIENDA" ] && source /root/functions.sh; echo $CAJA";"$TIENDA";"$VELA";"$N_TPVS";"$VERSION";"`Get_Info_Capturador`";"`Get_Info_VersionMinimal` ;');
+		list($this->caja,$this->tienda, $this->VELA, $this->NumeTPVs, $this->version, $this->capturador, $this->versionMinimal )=explode(";",$res);
+		$this->bat23=utf8_decode($this->cmdExec("[ -f /root/scripts_soporte/23.bat ] && sh /root/scripts_soporte/23.bat || sh /root/23.bat"));
+	} else {
+		$this->NumeTPVs=$this->cmdExec("grep NUMETPVS= /confdia/bin/setvari | cut -f2 -d'='");
+		$this->putLog($this->NumeTPVs);
+		eval("\$".$this->cmdExec("grep \"NUMECAJA=\" /confdia/bin/setvari").";");
+		$this->tienda=sprintf("%05d",$this->cmdExec("echo \$(grep NUMETIEN= /confdia/bin/setvari | tr -d '\n') | cut -f2 -d'='"));
+		$this->caja=$NUMECAJA;
+		$this->putLog($this->caja.".".$this->tienda);
+		$this->bat23=$this->cmdExec("tail -n+5 /confdia/bin/parainst.txt");
+		$this->putLog($this->bat23);
+	}
+
+	$this->memfree=$this->cmdExec("echo \$(awk '/MemTotal:/ {mt=$2} /MemFree:/ {mf=$2} END {printf \"%.0f\",100-((mf/mt)*100)}' /proc/meminfo)");
+	$this->putLog($this->memfree);
+	$this->HoraTPV=$this->cmdExec("date '+%d/%m/%Y %H:%M:%S'");
+	$this->putLog($this->HoraTPV);
+	if ($this->caja==0 || $this->tienda==0)
+		{ return false; }
+	return true;
+}
+
+public function getRemoteFileHTTP($File) { return "Host=".$this->host."&Port=".$this->port."&Archivo=".$File; }
+public function getFileLink($File) { return ($this->ssh2_sftp).$File; }
+public function getConnection() { return $this->connection; }
+public function getIP() { return ($this->host); }
+public function getPort() { return ($this->port); }
+public function getHoraTPV() { return ($this->HoraTPV); }
+
+private function putLog($Texto) { file_put_contents($this->filelog, $Texto."\n", FILE_APPEND); }
+
+private function try_connection() {
+	global $Pais;
+	if ($Pais == "XXX") $tmpPais="ESP"; else $tmpPais=$Pais;
+	$cmd='sudo ssh -qa -p'.$this->port.' -l'.$this->username.' -i /home/MULTI/id_rsa.'.$tmpPais.' '.$this->Opciones_SSH.' '.$this->host.' "echo 1" 2>/dev/null || echo 0';
+	$this->putLog($cmd);
+	$res=exec($cmd);
+	return ($res=="1");
+}
+
+public function __construct($host, $port=23, $username="root", $password="root")
+{
+	global $lite;
+	$lite=(empty($lite)?false:true);
+
+	$this->set_verbose($lite!=true);
+
+	$this->host=$host; $this->port=$port; $this->username=$username; $this->password=$password;
+	$Cadena_Info="<pre>IP: ".$this->host."<br>Puerto: ".$this->port."</pre>";
+
+	$this->connection=NULL;
+	$this->filelog=$_SERVER['DOCUMENT_ROOT'].$_SESSION['DIR_TMP']."log-".$host."-".$port;
+
+	$this->LOG("Creando conexion con caja...");
+	$connection = @ssh2_connect($host, $port, $this->methods, $this->callbacks);
+	$this->LOG("Autenticando acceso...");
+	if (!$connection) { $this->myERROR("No ha sido posible crear una conexion. Intentelo mas tarde..."); return NULL; }
+
+	$auth=@ssh2_auth_password($connection, $username, $password);
+	if ($auth === false)
+		{ $this->myERROR("al autenticar el usuario y password...<br>$Cadena_Info"); return NULL; }
+	$this->connection = $connection;
+
+	$this->LOG("Abriendo shell...");
+	$this->shell = ssh2_shell($this->connection,"bash");
+	if (!$this->shell)
+		{ $this->myERROR("No ha sido posible abrir un shell en remoto."); return NULL; }
+
+	$this->sftp = @ssh2_sftp($this->connection);
+	$this->ssh2_sftp="ssh2.sftp://".$this->sftp;
+
+	// RECOGEMOS ALGUNOS DATOS NECESARIOS DE REMOTO.
+	$this->LOG("Actualizando datos...");
+	if ($this->Actualiza_Datos()===false)
+		{ $this->myERROR("ERROR al recoger informacion de la caja."); return NULL; }
+
+	$this->LOG("Creando vistas...");
+	if ($this->Crear_Vistas()==false)
+		{ $this->myERROR("ERROR al crear las vistas."); return NULL; }
+
+	$this->LOG("Conectado!!");
+// 	echo '<script language="javascript">Desbloqueo();</script>';
+
+	return $this;
+}
+
+public function uploadFile($local_file, $remote_file)
+{
+	IF_ERROR(($stream = @fopen($this->ssh2_sftp.$remote_file, 'w')), "Could not open remote file: $remote_file");
+	IF_ERROR(($data_to_send = @file_get_contents($local_file)), "Could not open local file: $local_file.");
+	IF_ERROR(@fwrite($stream, $data_to_send), "Could not send data from file: $local_file.");
+	@fclose($stream);
+}
+
+private function myProgres($id, $texto) {
+	if ($id) {
+		echo '<script> $("#'.$id.'").html("'.$texto.'"); </script>';
+		flush(); ob_flush();
+	}
+}
+
+private function uploadFile_2($local_file, $remote_file, $id=NULL)
+{
+	$orig = @fopen($local_file, 'rb');
+	if (!$orig) {
+		if ($id) $this->myProgres($id, "<b style='color:red'>Could not open local file: ".basename($local_file)."</b>");
+		return false;
+	}
+
+	$tama=filesize($local_file); 
+	$read = 0;
+	$this->cmdExec("> $remote_file; chmod 666 $remote_file");
+	while ($read < $tama && ($buf = fread($orig, 1024))) {
+		$read += strlen($buf);
+		$this->cmdExec("echo -en \"".htmlspecialchars_decode($buf)."\" >> $remote_file;");
+		if ($id) $this->myProgres($id, "Progress ".round((($read/$tama)*100.0),0)."%...");
+	}
+	@fclose($dest); @fclose($orig);
+	if ($id) $this->myProgres($id, "<b style='color:blue'>Successful!!</b>");
+	return true;
+}
+
+public function copy($source, $dest) { return ssh2_scp_send($this->connection, $source, $dest); }
+public function getFile($source, $dest) { return ssh2_scp_send($this->connection, $this->ssh2_sftp.$source, $dest); }
+public function putFile($source, $dest) { return ssh2_scp_send($this->connection, $source, $this->ssh2_sftp.$dest); }
+
+public function putFile_2($source, $dest, $id=NULL) {
+	if ($this->SA==1) return $this->uploadFile_2($source, $dest, $id);
+	else return ssh2_scp_send($this->connection, $source, $this->ssh2_sftp.$dest);
+}
+
+public function getFile_2($source, $dest, $id=NULL) {
+	if ($this->SA==1) return $this->downloadFile_2($source, $dest, $id);
+	else return ssh2_scp_send($this->connection, $source, $this->ssh2_sftp.$dest);
+}
+
+public function receiveFile($remote_file, $local_file)
+{
+	if ($this->SA==1) { return $this->descargar_desde_tpv($remote_file, $local_file); }
+
+	$file_tmp = tempnam("/tmp", "download_");
+	$file_base=basename($remote_file);
+
+	$this->LOG("Comprimiendo fichero: ".$file_base);
+	$this->cmdExec("cat $remote_file | gzip > $file_tmp");
+
+	$this->LOG("Descargando fichero: ".$file_base);
+	$stream = @fopen($this->ssh2_sftp.$file_tmp, 'r');
+
+	$destin = @fopen($file_tmp, 'w');
+	$read = 0;
+	$len = $this->getFileSize($file_tmp);
+	while ($read < $len && ($buf = fread($stream, $len - $read))) {
+		$read += strlen($buf);
+		$this->PROGRESO((($read/$len)*100.0));
+		fwrite($destin, $buf);
+	}
+	@fclose($stream); @fclose($destin);
+
+	$this->LOG("Descomprimiendo fichero...");
+	exec("cat $file_tmp | gunzip > $local_file");
+
+	$this->LOG("Finalizando...");
+	$this->cmdExec("sudo rm -f $file_tmp");
+}
+
+private function remote_file_exists($remote_file) {
+	if (!$this->sftp) return ($this->cmdExec("[ -f $remote_file ] && echo 1 || echo 0")==1);
+	else return file_exists($this->ssh2_sftp.$remote_file);
+}
+
+private function remote_file_size($remote_file) {
+	if (!$this->sftp) return ($this->cmdExec("wc -c $remote_file | awk '{print $1}'"));
+	else return filesize($this->ssh2_sftp.$remote_file);
+}
+
+public function Get_File_URL($origen, $destino) {
+	$this->get_file_from_tpv($origen, $_SERVER['DOCUMENT_ROOT'].$destino);
+	_ECHO("<a href='$destino' target='_blank'>>> Click here to download/show file <<</a>");
+}
+
+public function get_file_from_tpv($remote_file, $local_file)
+{
+	$file_base=basename($remote_file);
+	$r_file="$remote_file.gz";
+	$l_file="$local_file.gz";
+
+	$bloque=10240;
+
+	_ECHO("<p>Downloading file $file_base: <span id='porcentaje_descarga'></span></p>");
+	$R_DIR_TMP="/tmp/descarga_hsr/";
+	$L_DIR_TMP=(empty($_SESSION['DIR_TMP'])?"/tmp/":$_SESSION['DIR_TMP']);
+
+	if (!($this->remote_file_exists($remote_file))) throw new Exception("Could not open remote file: $file_base");
+
+	if (!($destin = fopen($l_file, 'w'))) throw new Exception("Could not open local file: ".basename($local_file));
+
+	_ECHO("<script>$('#porcentaje_descarga').html('Compressing remote file... Please wait!!'); </script>");
+	$this->cmdExec("mkdir -p $R_DIR_TMP; cd $R_DIR_TMP; rm * -f; cat $remote_file | gzip > $r_file");
+
+	if (!$this->sftp) {
+		$tmp=$this->cmdExec("cd $R_DIR_TMP; split -b $bloque $r_file; echo -n \$(ls x*);");
+		$len=$this->remote_file_size("$r_file");
+		$array_files=explode(" ",$tmp);
+		$read=0;
+		foreach($array_files as $k => $d) {
+			$buf=$this->cmdExec("cat $R_DIR_TMP/$d");
+			$read += strlen($buf);
+			$porc=sprintf("%d/%d (%d%%)",$read, $len,(($read/$len)*100.0));
+			_ECHO("<script>$('#porcentaje_descarga').html('".$porc."'); </script>");
+			fwrite($destin, $buf);
+		}
+	} else {
+		if (!($stream = fopen($this->ssh2_sftp.$R_DIR_TMP.$r_file, 'r')))
+			throw new Exception("Could not open remote file: $file_base");
+		$len=$this->remote_file_size($r_file);
+		$read = 0;
+		while ($read < $len && ($buf = fread($stream, $len - $read))) {
+			$read += strlen($buf);
+			$porc=sprintf("%d/%d (%d%%)",$read, $len,(($read/$len)*100.0));
+			_ECHO("<script>$('#porcentaje_descarga').html('".$porc."'); </script>");
+			fwrite($destin, $buf);
+		}
+		@fclose($stream);
+	}
+	@fclose($destin);
+	exec("cat $l_file | gunzip > $local_file; rm -f $l_file");
+	return $local_file;
+}
+
+public function cmdExec( $cmd , $txt=NULL)
+{
+	if (!$this->connection) { $this->myERROR("FALLO en la conexion con la caja"); return NULL; }
+	if ($txt!=NULL) $this->LOG($txt);
+	$stream = @ssh2_exec($this->connection, $cmd);
+	$errorStream = @ssh2_fetch_stream($stream, SSH2_STREAM_STDERR);
+	@stream_set_blocking($errorStream, true);
+	@stream_set_blocking($stream, true);
+	return @stream_get_contents($stream);
+}
+
+public function shell( $cmd , $txt=NULL)
+{
+	if (!$this->connection) { $this->myERROR("FALLO en la conexion con la caja"); return NULL; }
+	if (@$txt) $this->LOG($txt);
+	if (!$this->stream) {
+		if (!($this->stream = @ ssh2_shell($this->connection,"xterm")))
+			throw new Exception("Could not open a shell for '$user' at host '{$this->host}:{$this->port}'");
+	}
+	$errorStream = @ssh2_fetch_stream($this->stream, SSH2_STREAM_STDERR);
+	@stream_set_blocking($errorStream, true);
+// 	@stream_set_blocking($stream, true);
+	fwrite($this->stream, $cmd."\n");
+	sleep(1);
+	while($line = fgets($this->stream)) {
+		flush();
+		echo $line;
+	}
+// 	fclose($this->stream);
+// 	return @stream_get_contents($stream);
+}
+
+public function getFileSize($file){
+	$Path=$this->ssh2_sftp.$file;
+	if (!is_file($Path)) die ("<br><b>Error:</b> fichero $file no existe...<br>");
+	IF_ERROR(($stream=fopen($Path, "r")), "Could not open file: $file");
+	return filesize($Path);
+}
+
+public function getFileContent($file) {
+	return file($this->ssh2_sftp.$file);
+}
+
+function scanFilesystem($dir,$filtro=null,$path=false) {
+	$tempArray = array();
+	$dir1=$this->ssh2_sftp.$dir;
+	$handle = opendir($dir1);
+	while (false !== ($file = readdir($handle))) {
+		if (substr("$file", 0, 1) != ".") {
+			if(is_dir($file)){
+				$tempArray[$file]=$this->scanFilesystem("$dir/$file",$path);
+			} else {
+				if (preg_match("/".$filtro."/",$file)) {
+				$tempArray[]=($path?$dir:"").$file; }
+			}
+		}
+	}
+	closedir($handle); 
+	return $tempArray;
+}
+
+function getFileList($dir)
+{
+	// array to hold return value
+	$retval = array();
+
+	// add trailing slash if missing
+	if(substr($dir, -1) != "/") $dir .= "/";
+
+	// open pointer to directory and read list of files
+	$d = @dir($dir) or die("getFileList: Failed opening directory $dir for reading");
+	while(false !== ($entry = $d->read())) {
+		// skip hidden files
+		if($entry[0] == ".") continue;
+		if(is_dir("$dir$entry")) {
+			$retval[] = array(
+				"name" => "$dir$entry/",
+				"type" => filetype("$dir$entry"),
+				"size" => 0,
+				"lastmod" => filemtime("$dir$entry")
+			);
+		} elseif(is_readable("$dir$entry")) {
+			$retval[] = array(
+				"name" => "$dir$entry",
+				"type" => mime_content_type("$dir$entry"),
+				"size" => filesize("$dir$entry"),
+				"lastmod" => filemtime("$dir$entry")
+			);
+		}
+	}
+	$d->close();
+	return $retval;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+public function GetDispCaje($Lineas=10) {
+	if ($this->SA==1)
+		return $this->cmdExec('tail -10 /var/log/cajera.log');
+	else
+		return $this->cmdExec('grep "OPERATOR DISPLAY" /usr/local/n2a/var/log/n2a_application.log | tail -10');
+}
+
+// function download_file_to_url($remote, $local, &$url) {
+// 	if (!$this->sftp) {
+// 		$DIR_TMP="/tmp/descarga_hsr/";
+// 		if (file_exists($local)) unlink($local);
+// 		$Res=$this->cmdExec('[ -f "'.$remote.'" ] && echo 1 || echo 0');
+// 		if ($Res==0) { $this->error="Remote file not exists: $remote";  return false; }
+// 		$tmp=$this->cmdExec("mkdir -p $DIR_TMP; cd $DIR_TMP; rm * -f; split -b 100000 $remote; echo -n \$(ls x*);");
+// 		$array_files=explode(" ",$tmp);
+// 		
+// 	}
+// }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////// SA //////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+function descargar_desde_tpv($remote_file, $local_file, $control=NULL) {
+	$DIR_TMP="/tmp/descarga_hsr/";
+// 	$file_size=$this->cmdExec("wc -c $remote_file");
+	@unlink($local_file);
+	$this->LOG("Preparando descarga...");
+	$tmp=$this->cmdExec("mkdir -p $DIR_TMP; cd $DIR_TMP; rm * -f; split -b 100000 $remote_file; echo -n \$(ls x*);");
+	$array_files=explode(" ",$tmp);
+// 	sort($array_files);
+	$read=1;
+	$this->LOG("Descargando ".$remote_file);
+	foreach($array_files as $k => $d) {
+		$file_content=$this->cmdExec("cat $DIR_TMP/$d");
+		$this->PROGRESO((($read/count($array_files))*100.0));
+		file_put_contents($local_file, $file_content,FILE_APPEND);
+		$read++;
+	}
+}
+
+function get($remote_file, $local_file, $id=NULL)
+{
+	$DIR_TMP="/tmp/descarga_hsr/";
+	@unlink($local_file);
+	$this->myProgres($id, "Preparando descarga...");
+	$tmp=$this->cmdExec("mkdir -p $DIR_TMP; cd $DIR_TMP; rm * -f; split -b 100000 $remote_file; echo -n \$(ls x*);");
+	$array_files=explode(" ",$tmp); $tama=count($array_files);
+	$read=1;
+	foreach($array_files as $k => $d) {
+		$file_content=$this->cmdExec("cat $DIR_TMP/$d");
+		$this->myProgres($id, "Progress ".round((($read/$tama)*100.0),0)."%...");
+		file_put_contents($local_file, htmlspecialchars_decode($file_content),FILE_APPEND);
+		$read++;
+	}
+	$this->cmdExec("cd $DIR_TMP; rm * -f");
+	$this->myProgres($id, "<b style='color:blue'>Successful!!</b>");
+	return true;
+}
+
+function put($local_file, $remote_file, $id=NULL)
+{
+	$orig = @fopen($local_file, 'rb');
+	if (!$orig) {
+		$this->myProgres($id, "<b style='color:red'>Could not open local file: ".basename($local_file)."</b>");
+		return false;
+	}
+	$tama=filesize($local_file); 
+	$read = 0;
+	$this->cmdExec("> $remote_file");
+	while ($read < $tama && ($buf = fread($orig, 10000))) {
+		$read += strlen($buf);
+		$cmd="echo -en -- \"".htmlspecialchars_decode($buf)."\" >> $remote_file";
+		$this->cmdExec($cmd);
+		$this->myProgres($id, "Progress ".round((($read/$tama)*100.0),0)."%...");
+	}
+	@fclose($dest); @fclose($orig);
+	$this->myProgres($id, "<b style='color:blue'>Successful!!</b>");
+	return true;
+}
+
+function BBDD_Actual($local_file) {
+	if ($this->SA==1) {
+		$this->LOG("Preparando backup...");
+			$this->cmdExec("rm /tmp/backup.* -f");
+		$this->LOG("Empaquetando ficcaje y error.log...");
+			$this->cmdExec("tar -rf /tmp/backup.tar /confdia/ficcaje/*.dat  --exclude tramas.dat /confdia/ficcaje/*.0* /confdia/ficcaje/error.log -P");
+		$this->LOG("Empaquetando ctrdatos...");
+			$this->cmdExec("tar -rf /tmp/backup.tar /confdia/ctrdatos/*.dat /confdia/ctrdatos/*.idx -P");
+		$this->LOG("Empaquetando firma...");
+			$this->cmdExec("[ -d /confdia/ficcaje/firma ] && tar -rf /tmp/backup.tar /confdia/ficcaje/firma");
+		$this->LOG("Empaquetando signs...");
+			$this->cmdExec("[ -d /confdia/signs ] && tar -rf /tmp/backup.tar /confdia/signs/");
+		$this->LOG("Empaquetando cierrez...");
+			$this->cmdExec("[ -d /confdia/cierrez ] && tar -rf /tmp/backup.tar /confdia/cierrez/");
+		$this->LOG("Empaquetando actualPAF...");
+			$this->cmdExec("[ -d /confdia/actualPAF ] && tar -rf /tmp/backup.tar /confdia/actualPAF/");
+		$this->LOG("Empaquetando tmp_PAF...");
+			$this->cmdExec("tar -rf /tmp/backup.tar /confdia/tmp_PAF/".$this->tienda);
+		$this->LOG("Empaquetando tmp_PAF/SINTEGRA...");
+			$this->cmdExec("[ -d /confdia/tmp_PAF/SINTEGRA ] && tar -rf /tmp/backup.tar /confdia/tmp_PAF/SINTEGRA");
+		$this->LOG("Empaquetando nfe...");
+			$this->cmdExec("[ -d /confdia/nfe ] && tar -rf /tmp/backup.tar /confdia/nfe");
+		$this->LOG("Empaquetando ficheros .pat...");
+			$this->cmdExec("tar -rf /tmp/backup.tar /confdia/comunica/*.pat");
+		$this->LOG("Comprimiendo BACKUP...");
+			$this->cmdExec("gzip /tmp/backup.tar");
+			$this->cmdExec("mv -f /tmp/backup.tar.gz /tmp/backup.tgz");
+		$this->descargar_desde_tpv("/tmp/backup.tgz", $local_file);
+	}
+}
+
+public function Fichero_Por_Trozos($Fichero) {
+	_ECHO('<script>$("#div_descargando_informacion").dialog("open");</script>');
+	$D_TROCEAR="/tmp/trocear";
+	$this->cmd("mkdir -p $D_TROCEAR; cd $D_TROCEAR; rm x* -f; split $Fichero -l500; echo -n \$(ls x*);",$tmpFiles);
+	$tmpListaFiles=explode(" ",$tmpFiles);
+	$Contador=0; $Total=count($tmpListaFiles);
+	foreach($tmpListaFiles as $f) {
+		$this->cmd("cat $D_TROCEAR/$f",$Res);
+		if (function_exists("_ECHO")==1)
+			_ECHO(htmlspecialchars_decode($Res));
+		else
+			echo htmlspecialchars_decode($Res);
+	}
+	$this->cmd("rm $D_TROCEAR -fr",$Res);
+	_ECHO('<script>$("#div_descargando_informacion").dialog("close");</script>');
+}
+
+public function Busca_Ficheros(&$Listado, $Patron, $Path) {
+	$Listado=array();
+	$this->cmd("echo -n \$(find $Path $Patron)",$tmp); $Listado=explode(" ",$tmp);
+	return count($Listado);
+}
+
+public function setTimeout($seconds = self :: DEFAULT_TIMEOUT) {
+	if (is_numeric($seconds) && $seconds > 0)
+		return $this->timeout = $seconds;
+	return false;
+}
+
+public function dump_n2a() {
+	$NombreBackup=$this->tienda."-".$this->caja."-Actual.sql.gz";
+	$this->LOG("Making dump of database...");
+	$this->cmdExec('mysqldump n2a | gzip > /tmp/'.$NombreBackup);
+// 	$this->descargar_desde_tpv("/tmp/$NombreBackup", $_SERVER['DIR_TMP']."/".$NombreBackup);
+// 	$this->Fichero_Por_Trozos("/tmp/$NombreBackup");
+}
+
+public function mysql ($arg) {
+	return $this->cmdExec('mysql n2a -e "'.$arg.'"');
+}
+
+public function cmd($cmd, & $output = null) {
+	//Confirm we have a stream open
+	if (!$this->stream) {
+		if (!($this->stream = @ ssh2_shell($this->connection)))
+			throw new Exception("Could not open a shell for '$user' at host '{$this->host}:{$this->port}'");
+	}
+
+	//Generate a random string to use as a key we can parse for.
+	$prefix = md5(microtime());
+	$suffix = md5(microtime());
+	$fail = md5(microtime());
+
+	//Set some variables
+	$output = null;
+	$rc = null;
+	$start = time();
+
+	//Generate the command
+	//    It wraps the command with echo statements in order to determine the begining 
+	//    and end of the output from running the command.
+// 	$command = sprintf("%s", escapeshellarg($cmd));
+	$command = sprintf("echo %s && (%s) && echo %s || echo %s\n", $prefix, $cmd, $suffix . ':$?', $fail . ':$?');
+	fwrite($this->stream, $command);
+
+	//Start the inifinite loop
+	while (1) {
+		//Get some output from shell
+		$output .= stream_get_contents($this->stream);
+
+		//Flush the output
+		//    Found the prefix key. Strip everything up to and including the prefix key from output
+		//    The \r\n is to make sure we get the new line feed after the echo
+		if (preg_match(sprintf('/%s\r?\n(.*)/s', $prefix), $output, $matches))
+			$output = $matches[1];
+
+		//Finished
+		//    Found the suffix key so the command is done. Strip the suffix key and everything after from output
+		if (preg_match(sprintf('/(.*)%s:(\d*)\r?\n/s', $suffix), $output, $matches)) {
+			$output = $matches[1];
+			$rc = $matches[2];
+			return true;
+		}
+
+		//Failed
+		//    Found the failed suffix key so the command errored out for some reason. 
+		//    Strip the failed suffix key and everything after from output and return false.
+		if (preg_match(sprintf('/(.*)%s:(\d*)\r?\n/s', $fail), $output, $matches)) {
+			$output = $matches[1];
+			$rc = $matches[2];
+			return false;
+		}
+
+		//Check for timeout
+		if (time() > $start + $this->timeout)
+			throw new Exception("Command '{$cmd}' timed out");
+
+		//Sleep for a micro second to save the processor
+		usleep(1);
+	}
+
+	//If we get here something weird happened.
+	return false;
+}
+
+}
+
+?>

@@ -1,0 +1,5 @@
+#Info {  background-color: whitesmoke; display: inline-block; padding: 0.5em; border: 1px solid black; border-radius: 3px; }
+#jqGridPager_right { font-size: 10px; }
+
+.ui-jqgrid .ui-search-table td.ui-search-clear { width: 5px; }
+.ui-jqgrid tr.jqgrow { cursor: pointer; }
