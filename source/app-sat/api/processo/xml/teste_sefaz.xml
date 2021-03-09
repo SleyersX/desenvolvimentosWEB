@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CFe>
+   <infCFe versaoDadosEnt="0.08">
+      <ide>
+         <CNPJ>16716114000172</CNPJ>
+         <signAC>SGR-SAT SISTEMA DE GESTAO E RETAGUARDA DO SAT</signAC>
+         <numeroCaixa>115</numeroCaixa>
+      </ide>
+      <emit>
+         <CNPJ>61099008000141</CNPJ>
+         <IE>111111111111</IE>
+         <IM>123123</IM>
+         <cRegTribISSQN>1</cRegTribISSQN>
+         <indRatISSQN>N</indRatISSQN>
+      </emit>
+      <dest />
+      <det nItem="1">
+         <prod>
+            <cProd>01</cProd>
+            <xProd>Carne</xProd>
+            <CFOP>5000</CFOP>
+            <uCom>un</uCom>
+            <qCom>1.0000</qCom>
+            <vUnCom>2.100</vUnCom>
+            <indRegra>A</indRegra>
+         </prod>
+         <imposto>
+            <ICMS>
+               <ICMS00>
+                  <Orig>0</Orig>
+                  <CST>00</CST>
+                  <pICMS>5.00</pICMS>
+               </ICMS00>
+            </ICMS>
+            <PIS>
+               <PISAliq>
+                  <CST>01</CST>
+                  <vBC>2.10</vBC>
+                  <pPIS>1.0000</pPIS>
+               </PISAliq>
+            </PIS>
+            <PISST>
+               <vBC>1.10</vBC>
+               <pPIS>1.0000</pPIS>
+            </PISST>
+            <COFINS>
+               <COFINSAliq>
+                  <CST>01</CST>
+                  <vBC>1.00</vBC>
+                  <pCOFINS>1.0000</pCOFINS>
+               </COFINSAliq>
+            </COFINS>
+         </imposto>
+      </det>
+      <total />
+      <pgto>
+         <MP>
+            <cMP>01</cMP>
+            <vMP>33.00</vMP>
+         </MP>
+      </pgto>
+   </infCFe>
+</CFe>

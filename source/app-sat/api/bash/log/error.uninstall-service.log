@@ -1,0 +1,24 @@
+[23/10/2020 - 21:31:07]:service:Executando o programa.
+[23/10/2020 - 21:31:07]:service:['remove']:['09012']:['10.106.101.158']:['1'].
+[23/10/2020 - 21:31:07]:service:Servico removido com sucesso ['remove']:['09012']:['10.106.101.158']:['10001'].
+[23/10/2020 - 21:31:07]:service:Executando o programa.
+[23/10/2020 - 21:31:07]:service:['remove']:['09012']:['10.106.101.158']:['2'].
+[23/10/2020 - 21:31:08]:service:Falha ao remover servico ['remove']:['09012']:['10.106.101.158']:['10002'].
+[23/10/2020 - 21:31:08]:service:Executando o programa.
+[23/10/2020 - 21:31:08]:service:['remove']:['09012']:['10.106.101.158']:['3'].
+[23/10/2020 - 21:31:09]:service:Falha ao remover servico ['remove']:['09012']:['10.106.101.158']:['10003'].
+[23/10/2020 - 21:31:09]:service:Executando o programa.
+[23/10/2020 - 21:31:09]:service:['remove']:['09012']:['10.106.101.158']:['4'].
+[23/10/2020 - 21:31:10]:service:Falha ao remover servico ['remove']:['09012']:['10.106.101.158']:['10004'].
+[23/10/2020 - 21:31:33]:service:Executando o programa.
+[23/10/2020 - 21:31:33]:service:['remove']:['09012']:['10.106.101.158']:['1'].
+[23/10/2020 - 21:31:34]:service:Servico removido com sucesso ['remove']:['09012']:['10.106.101.158']:['10001'].
+[23/10/2020 - 21:31:34]:service:Executando o programa.
+[23/10/2020 - 21:31:34]:service:['remove']:['09012']:['10.106.101.158']:['2'].
+[23/10/2020 - 21:31:35]:service:Falha ao remover servico ['remove']:['09012']:['10.106.101.158']:['10002'].
+[23/10/2020 - 21:31:35]:service:Executando o programa.
+[23/10/2020 - 21:31:35]:service:['remove']:['09012']:['10.106.101.158']:['3'].
+[23/10/2020 - 21:31:36]:service:Falha ao remover servico ['remove']:['09012']:['10.106.101.158']:['10003'].
+[23/10/2020 - 21:31:36]:service:Executando o programa.
+[23/10/2020 - 21:31:36]:service:['remove']:['09012']:['10.106.101.158']:['4'].
+[23/10/2020 - 21:31:37]:service:Falha ao remover servico ['remove']:['09012']:['10.106.101.158']:['10004'].

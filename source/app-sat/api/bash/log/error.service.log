@@ -1,0 +1,12 @@
+[06/11/2020 - 17:25:32]:service:Executando o programa.
+[06/11/2020 - 17:25:32]:service:['status']:['00002']:['10.105.188.2']:['1'].
+[06/11/2020 - 17:25:32]:service:00002:1:['Status watchdog-monitor-sat-services: UP -> PID=['3178']'].
+[07/11/2020 - 18:43:30]:service:Executando o programa.
+[07/11/2020 - 18:43:30]:service:['status']:['00002']:['10.105.188.2']:['1'].
+[07/11/2020 - 18:43:31]:service:00002:1:['Status watchdog-monitor-sat-services: UP -> PID=['3153']'].
+[07/11/2020 - 18:43:31]:service:Executando o programa.
+[07/11/2020 - 18:43:31]:service:['status']:['00002']:['10.105.188.2']:['3'].
+[07/11/2020 - 18:43:31]:service:00002:3:['Status watchdog-monitor-sat-services: UP -> PID=['27989']'].
+[07/11/2020 - 18:43:31]:service:Executando o programa.
+[07/11/2020 - 18:43:31]:service:['status']:['00002']:['10.105.188.2']:['7'].
+[07/11/2020 - 18:43:32]:service:00002:7:['Status watchdog-monitor-sat-services: UP -> PID=['29377']'].

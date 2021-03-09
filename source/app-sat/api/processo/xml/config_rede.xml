@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<tipoInter>ETHE</tipoInter>
+	<tipoLan>IPFIX</tipoLan>
+	<lanIP>010.010.010.206</lanIP>
+	<lanMask>255.255.255.000</lanMask>
+	<lanGW>010.010.010.252</lanGW>
+	<lanDNS1>010.105.186.005</lanDNS1>
+	<lanDNS2>010.106.068.066</lanDNS2>
+	<proxy>0</proxy>
+	<proxy_ip/>
+	<proxy_user/>
+	<proxy_senha/>
+</config>
