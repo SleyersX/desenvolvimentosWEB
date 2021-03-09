@@ -1,0 +1,21 @@
+{
+    "name": "root/api",
+    "description": "API tabelas SATs",
+    "type": "project",
+    "require": {
+        "coffeecode/datalayer": "1.1.*"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Walter Moura",
+            "email": "walter.araujo.dw@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "Source\\": "source/"
+        }
+    }
+}
