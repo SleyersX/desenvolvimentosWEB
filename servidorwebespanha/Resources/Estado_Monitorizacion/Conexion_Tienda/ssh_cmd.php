@@ -7,11 +7,11 @@ if(!($con = ssh2_connect($ip, $port))){
 } else {
 	//Autentificación
 	if(!ssh2_auth_password($con, "root", "root")) {
-		die('Fallo de autentificación en la máquina '.$ip;)
+		die('Fallo de autentificación en la máquina '.$ip);
 	} else {
 		//Ejecución del comando
 		if(!($stream = ssh2_exec($con, $comando )) ){
-			die('Fallo de ejecución de comando '.$comando.' en la máquina '.$ip;)
+			die('Fallo de ejecución de comando '.$comando.' en la máquina '.$ip);
 		} else {
 			echo "Ejecutado comando $comando"; flush();
 			stream_set_blocking( $stream, true );

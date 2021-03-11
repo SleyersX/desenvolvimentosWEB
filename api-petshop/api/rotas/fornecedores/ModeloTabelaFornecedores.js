@@ -21,7 +21,7 @@ const opcoes = {
     tableName: 'fornecedores',
     timestamps: true,
     createdAt: 'dataCriacao',
-    updatedAt: 'dataAtualizcao',
+    updatedAt: 'dataAtualizacao',
     version: 'versao'
 }
 
