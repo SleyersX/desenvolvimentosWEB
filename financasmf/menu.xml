@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu>
+  <menuitem label="Agenda">
+    <icon>fa:calendar blue fa-fw</icon>
+    <action>AgendaViewForm</action>
+  </menuitem>
+
+  <menuitem label="Cadastros">
+    <icon>fa:database fa-fw</icon>
+    <menu>
+          <menuitem label="Centros de Custos">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>FinccustoList</action>
+          </menuitem>
+          <menuitem label="Contas Financeiras">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>FincontaFormList</action>
+          </menuitem>
+          <menuitem label="Filiais">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>FinFiliaisList</action>
+          </menuitem>
+          <menuitem label="Pessoas/Empresas">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>ContatoList</action>
+          </menuitem>
+          <menuitem label="Plano de Contas">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>FinplanocontaList</action>
+          </menuitem>
+    </menu>
+  </menuitem>
+
+  <menuitem label="Operações">
+    <icon>fa:cogs green fa-fw</icon>
+    <menu>
+          <menuitem label="Lançamentos">
+            <icon>fa:folder-open-o fa:fw</icon>
+            <action>LancamentosList</action>
+          </menuitem>
+          <menuitem label="Contas Pagar/Receber">
+            <icon>fa:folder-open-o fa:fw</icon>
+            <action>FinpagrecList</action>
+          </menuitem>
+    </menu>
+  </menuitem>
+
+  <menuitem label="Relatórios">
+    <icon>fa:print orange fa-fw</icon>
+    <menu>
+          <menuitem label="Balancete">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>FinBalanceteReport</action>
+          </menuitem>
+          <menuitem label="Contas Pagar/Receber">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>FinPagRecReport</action>
+          </menuitem>
+          <menuitem label="Extrato de Movimento">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>FinExtratoReport</action>
+          </menuitem>
+          <menuitem label="Saldos de Contas">
+            <icon>fa:folder-open-o fa-fw</icon>
+            <action>FinSaldoContasReport</action>
+          </menuitem>
+    </menu>
+  </menuitem>
+
+  <menuitem label="Configurações">
+    <icon>fa:wrench fa-fw</icon>
+    <menu>
+      <menuitem label="Grupos">
+        <icon>fa:users fa-fw</icon>
+        <action>SystemGroupList</action>
+      </menuitem>
+      <menuitem label="_t{Users}">
+        <icon>fa:user fa-fw</icon>
+        <action>SystemUserList</action>
+      </menuitem>
+      <menuitem label='_t{Preferences}'>
+        <icon>fa:cog fa-fw</icon>
+        <action>SystemPreferenceForm#method=onEdit</action>
+      </menuitem>
+      <menuitem label="Log de acessos">
+        <icon>fa:key fa-fw</icon>
+        <action>SystemAccessLogList</action>
+      </menuitem>
+      <menuitem label="PHP Info">
+        <icon>fa:info-circle fa-fw</icon>
+        <action>SystemPHPInfoView</action>
+      </menuitem>
+    </menu>
+  </menuitem>
+  <menuitem label="Logout">
+    <action>LoginForm#method=onLogout#static=1</action>
+    <icon>fa:sign-out red fa-fw</icon>
+  </menuitem>
+</menu>
