@@ -22,7 +22,7 @@ $mail->setFrom('list@example.com', 'List manager');
 $mail->Host   = 'smtp1.example.com;smtp2.example.com';
 $mail->Mailer = 'smtp';
 
-@mysqli_connect('localhost','root','password');
+@mysqli_connect('database','root','password');
 @mysqli_select_db("my_company");
 $query = "SELECT full_name, email, photo FROM employee";
 $result = @mysqli_query($query);

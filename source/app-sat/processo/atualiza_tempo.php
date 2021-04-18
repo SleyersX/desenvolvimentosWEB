@@ -1,6 +1,6 @@
 <?php
     $tempo = 0;
-    $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+    $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
     $verificaTempo = $conexao->prepare("SELECT * FROM tb_sessoes_login_dashsat WHERE id = '".$_POST['id']."'");
     $verificaTempo->execute();
     $fech = $verificaTempo->fetchAll();

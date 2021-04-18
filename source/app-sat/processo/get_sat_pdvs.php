@@ -5,7 +5,7 @@
     $shop = $_POST['nshop'];
     $nbox = $_POST['ncaixa'];
 
-    $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+    $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
     $verificaSat = $conexao->prepare("SELECT sat FROM ". DATA_CONFIG_BD["cn_tab_sat"] ." WHERE loja = '$shop' AND caixa = '0$nbox'");
     $verificaSat->execute();
     $fechSAT = $verificaSat->fetchAll();

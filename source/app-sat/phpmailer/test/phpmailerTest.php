@@ -96,7 +96,7 @@ class PHPMailerTest extends PHPUnit_Framework_TestCase
         } else {
             $this->Mail->Port = 25;
         }
-        $this->Mail->Helo = 'localhost.localdomain';
+        $this->Mail->Helo = 'database.localdomain';
         $this->Mail->SMTPAuth = false;
         $this->Mail->Username = '';
         $this->Mail->Password = '';
@@ -240,7 +240,7 @@ class PHPMailerTest extends PHPUnit_Framework_TestCase
         if ($this->Mail->Port != 25) {
             $this->addChange('Port', $this->Mail->Port);
         }
-        if ($this->Mail->Helo != 'localhost.localdomain') {
+        if ($this->Mail->Helo != 'database.localdomain') {
             $this->addChange('Helo', $this->Mail->Helo);
         }
         if ($this->Mail->SMTPAuth) {
@@ -2083,7 +2083,7 @@ EOT;
         sleep(2);
         //Test a known-good login
         $this->assertTrue(
-            POP3::popBeforeSmtp('localhost', 1100, 10, 'user', 'test', $this->Mail->SMTPDebug),
+            POP3::popBeforeSmtp('database', 1100, 10, 'user', 'test', $this->Mail->SMTPDebug),
             'POP before SMTP failed'
         );
         //Kill the fake server
@@ -2105,7 +2105,7 @@ EOT;
         sleep(2);
         //Test a known-bad login
         $this->assertFalse(
-            POP3::popBeforeSmtp('localhost', 1101, 10, 'user', 'xxx', $this->Mail->SMTPDebug),
+            POP3::popBeforeSmtp('database', 1101, 10, 'user', 'xxx', $this->Mail->SMTPDebug),
             'POP before SMTP should have failed'
         );
         shell_exec('kill -TERM ' . escapeshellarg($pid));
@@ -2121,13 +2121,13 @@ EOT;
         $this->Mail->SMTPDebug = 4; //Show connection-level errors
         $this->assertTrue($this->Mail->smtpConnect(), 'SMTP single connect failed');
         $this->Mail->smtpClose();
-        $this->Mail->Host = "ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10";
+        $this->Mail->Host = "ssl://database:12345;tls://database:587;10.10.10.10:54321;database:12345;10.10.10.10";
         $this->assertFalse($this->Mail->smtpConnect(), 'SMTP bad multi-connect succeeded');
         $this->Mail->smtpClose();
-        $this->Mail->Host = "localhost:12345;10.10.10.10:54321;" . $_REQUEST['mail_host'];
+        $this->Mail->Host = "database:12345;10.10.10.10:54321;" . $_REQUEST['mail_host'];
         $this->assertTrue($this->Mail->smtpConnect(), 'SMTP multi-connect failed');
         $this->Mail->smtpClose();
-        $this->Mail->Host = " localhost:12345 ; " . $_REQUEST['mail_host'] . ' ';
+        $this->Mail->Host = " database:12345 ; " . $_REQUEST['mail_host'] . ' ';
         $this->assertTrue($this->Mail->smtpConnect(), 'SMTP hosts with stray spaces failed');
         $this->Mail->smtpClose();
         $this->Mail->Host = $_REQUEST['mail_host'];

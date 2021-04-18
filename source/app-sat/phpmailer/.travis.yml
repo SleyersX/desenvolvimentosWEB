@@ -16,7 +16,7 @@ before_install:
   - sudo apt-get install -y -qq postfix
 before_script:
   - sudo service postfix stop
-  - smtp-sink -d "%d.%H.%M.%S" localhost:2500 1000 &
+  - smtp-sink -d "%d.%H.%M.%S" database:2500 1000 &
   - mkdir -p build/logs
   - cd test
   - cp testbootstrap-dist.php testbootstrap.php

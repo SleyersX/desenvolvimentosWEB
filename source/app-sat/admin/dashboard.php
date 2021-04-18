@@ -102,7 +102,7 @@
     
     //Conexão ao banco de dados, exclusiva para monitorar inatividade do usuário
     $idLoginTemp = $_SESSION['idLoginTempDashSAT'];
-    $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+    $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
     $usuarioLogado = $conexao->prepare("SELECT * FROM tb_sessoes_login_dashsat WHERE id = '$idLoginTemp'");
     $usuarioLogado->execute();
     $fech = $usuarioLogado->fetchAll();

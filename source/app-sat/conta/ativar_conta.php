@@ -13,7 +13,7 @@
         // Conexão banco de dados
         $user="root";
         $passwd="diabrasil";
-        $host="localhost";
+        $host="database";
         $banco="srvremoto";
         $conn = mysqli_connect($host,$user,$passwd,$banco);
 

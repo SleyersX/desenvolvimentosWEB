@@ -5,7 +5,7 @@
     $cod = $_POST['cod'];
 
     if($cod == 1){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT dias_cupons_acumulados FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -17,7 +17,7 @@
         }
     }
     if($cod == 2){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT n_dias_cupons_acumulados FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -29,7 +29,7 @@
         } 
     }
     if($cod == 3){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT cupons_acumulados FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -41,7 +41,7 @@
         }
     }
     if($cod == 4){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT numero_cupons_acumulados FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -53,7 +53,7 @@
         } 
     }
     if($cod == 5){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT nivel_bateria FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -65,7 +65,7 @@
         }
     }
     if($cod == 6){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT vencimento_certificado FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -77,7 +77,7 @@
         }
     }
     if($cod == 7){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT dias_vencimento_certificado FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -89,7 +89,7 @@
         } 
     }
     if($cod == 8){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT comunicacao_sefaz FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -101,7 +101,7 @@
         }
     }
     if($cod == 9){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT dias_sem_comunicarf_sefaz FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -113,7 +113,7 @@
         } 
     }
     if($cod == 10){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT variacao_relogio FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -125,7 +125,7 @@
         }
     }
     if($cod == 11){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT variacao_ntp FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -137,7 +137,7 @@
         } 
     }
     if($cod == 12){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT estado_operacao_bloqueado FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -149,7 +149,7 @@
         }
     }
     if($cod == 13){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT estado_wan_desligado FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();
@@ -161,7 +161,7 @@
         }
     }
     if($cod == 14){
-        $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+        $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
         $query = $conexao->prepare("SELECT loja_bloqueio FROM ". DATA_CONFIG_BD["tab_alarmes"] ." WHERE id = 1");
         $query->execute();
         $fech = $query->fetchAll();

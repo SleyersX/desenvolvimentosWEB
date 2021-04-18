@@ -2,7 +2,7 @@
     include "../config/config.php";
     unset($existe);
     
-    $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+    $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
     if((strlen($_POST['consulta']) <= 5) && ($_POST['consulta'] <= 9999)){
         $nLoja = $_POST['consulta'];
         $verifica = $conexao->prepare("SELECT n_tpvs_setvari FROM ". DATA_CONFIG_BD["tab_group_lojas"] ." WHERE loja = '$nLoja'");

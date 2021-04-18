@@ -39,10 +39,10 @@ if ($_SG['conectaServidorDashSAT'] == true) {
 		//$nlembrete = addcslashes($remembert);
 		//echo "<script>alert('Senha1:$nsenha');</script>";
 		$user = "root";
-		$password = "diabrasil";
+		$password = "8wFml6golmmbuKPv";
 		
 		// Monta uma consulta SQL (query) para procurar um usuário
-		$conn = mysqli_connect('localhost', $user, $password , 'srvremoto')or die ("Erro ao conectar com o banco de dados!");
+		$conn = mysqli_connect('database', $user, $password , 'srvremoto')or die ("Erro ao conectar com o banco de dados!");
 		//require_once("conecta.php");
 		//$sql = "SELECT * FROM tb_usuarios WHERE login='$nusuario' AND senha='$nsenha' LIMIT 1";
 		$sql = "SELECT * FROM tb_usuarios_dashsat WHERE login='$nusuario'";
@@ -373,7 +373,7 @@ if ($_SG['conectaServidorDashSAT'] == true) {
 
 						// Monta uma consulta SQL (query) para procurar um usuário
 						$dataIniSessao = date('Y-m-d H:i:s');
-						$conn_ = mysqli_connect('localhost', $user, $password , 'srvremoto');
+						$conn_ = mysqli_connect('database', $user, $password , 'srvremoto');
 						$sqlInsertRegistraTempLogin = "INSERT INTO tb_sessoes_login_dashsat (data_inicio,token,id_user, nome_user, login_user) VALUES ('$dataIniSessao','$tokenLogon','$id', '$userName', '$userLogin')";
 						$queryRegistraTempLogin = mysqli_query($conn_, $sqlInsertRegistraTempLogin);
 						if(mysqli_insert_id($conn_)){
@@ -419,7 +419,7 @@ if ($_SG['conectaServidorDashSAT'] == true) {
     function insert_log($idUserLog,$nomeUserLog,$loginUserLog,$appLog,$dataLog,$logDados){
         $user="root";
         $passwd="diabrasil";
-        $host="localhost";
+        $host="database";
         $banco="srvremoto";
         $conn= mysqli_connect($host,$user,$passwd,$banco);
 
@@ -443,7 +443,7 @@ if ($_SG['conectaServidorDashSAT'] == true) {
     function insert_login_temp($idUserLogin,$loginUserLogin){
         $user="root";
         $passwd="diabrasil";
-        $host="localhost";
+        $host="database";
         $banco="srvremoto";
         $conn= mysqli_connect($host,$user,$passwd,$banco);
 
@@ -467,7 +467,7 @@ if ($_SG['conectaServidorDashSAT'] == true) {
     function delete_login_temp($idUserLogin){
         $user="root";
         $passwd="diabrasil";
-        $host="localhost";
+        $host="database";
         $banco="srvremoto";
         $conn= mysqli_connect($host,$user,$passwd,$banco);
 
@@ -492,7 +492,7 @@ if ($_SG['conectaServidorDashSAT'] == true) {
     function insert_bloqueio_temp($id_user,$nome_user,$login_user){
 		$user="root";
 		$passwd="diabrasil";
-		$host="localhost";
+		$host="database";
 		$banco="srvremoto";
 		$conn= mysqli_connect($host,$user,$passwd,$banco);
 
@@ -648,7 +648,7 @@ if ($_SG['conectaServidorDashSAT'] == true) {
 		$idLoginTemp = $_SESSION['idLoginTempDashSAT'];
 		// Monta uma consulta SQL (query) para procurar um usuário
 		$dataFimSessao = date('Y-m-d H:i:s');
-		$conn_ = mysqli_connect('localhost', $user, $password , 'srvremoto');
+		$conn_ = mysqli_connect('database', $user, $password , 'srvremoto');
 		$sqlDelRegistraTempLogin = "UPDATE tb_sessoes_login_dashsat SET data_fim = '$dataFimSessao' WHERE id = '$idLoginTemp'";
 		$queryRegistraTempLogin = mysqli_query($conn_,$sqlDelRegistraTempLogin);
 		if(mysqli_affected_rows($conn_)){
@@ -698,7 +698,7 @@ if ($_SG['conectaServidorDashSAT'] == true) {
 		$idLoginTemp = $_SESSION['idLoginTempDashSAT'];
 		// Monta uma consulta SQL (query) para procurar um usuário
 		$dataFimSessao = date('Y-m-d H:i:s');
-		$conn_ = mysqli_connect('localhost', $user, $password , 'srvremoto');
+		$conn_ = mysqli_connect('database', $user, $password , 'srvremoto');
 		$sqlDelRegistraTempLogin = "UPDATE tb_sessoes_login_dashsat SET data_fim = '$dataFimSessao' WHERE id = '$idLoginTemp'";
 		$queryRegistraTempLogin = mysqli_query($conn_,$sqlDelRegistraTempLogin);
 		if(mysqli_affected_rows($conn_)){

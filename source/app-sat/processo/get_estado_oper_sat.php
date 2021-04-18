@@ -4,7 +4,7 @@
 
     $nsat = $_POST['nsat'];
     //echo "\n$nsat";
-    $conexao = new PDO('mysql:host=localhost;dbname=srvremoto',"root","diabrasil");
+    $conexao = new PDO('mysql:host=database;dbname=srvremoto',"root","8wFml6golmmbuKPv");
     $verificaSat = $conexao->prepare("SELECT estado_operacao FROM ". DATA_CONFIG_BD["cn_tab_sat"] ." WHERE sat = '$nsat'");
     $verificaSat->execute();
     $fechSAT = $verificaSat->fetchAll();

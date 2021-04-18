@@ -6,7 +6,7 @@
     header( 'Content-Transfer-Encoding: binary' );
     header( 'Pragma: no-cache');
 
-    $pdo = new PDO( 'mysql:host=localhost;dbname=srvremoto', 'root', 'diabrasil' );
+    $pdo = new PDO( 'mysql:host=database;dbname=srvremoto', 'root', 'diabrasil' );
     $stmt = $pdo->prepare('SELECT loja, DireFisc, PersFisc, CodiEstaClie, LocaFisc, CodiIden, n_tpvs_setvari FROM '. DATA_CONFIG_BD["cn_tab_list_lojas"] .';' );   
     $stmt->execute();
     $results = $stmt->fetchAll( PDO::FETCH_ASSOC );

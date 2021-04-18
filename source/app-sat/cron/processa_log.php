@@ -15,7 +15,7 @@
     function insert_log_III($idUserLog,$nomeUserLog,$loginUserLog,$appLog,$dataLog,$logDados){
         $user="root";
         $passwd="diabrasil";
-        $host="localhost";
+        $host="database";
         $banco="srvremoto";
         $conn= mysqli_connect($host,$user,$passwd,$banco);
 

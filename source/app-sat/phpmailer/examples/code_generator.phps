@@ -8,7 +8,7 @@ require '../PHPMailerAutoload.php';
 
 $CFG['smtp_debug'] = 2; //0 == off, 1 for client output, 2 for client and server
 $CFG['smtp_debugoutput'] = 'html';
-$CFG['smtp_server'] = 'localhost';
+$CFG['smtp_server'] = 'database';
 $CFG['smtp_port'] = '25';
 $CFG['smtp_authenticate'] = false;
 $CFG['smtp_username'] = 'name@example.com';

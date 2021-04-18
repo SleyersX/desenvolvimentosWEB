@@ -7,7 +7,7 @@
     header( 'Content-Transfer-Encoding: binary' );
     header( 'Pragma: no-cache');
 
-    $pdo = new PDO( 'mysql:host=localhost;dbname=srvremoto', 'root', 'diabrasil' );
+    $pdo = new PDO( 'mysql:host=database;dbname=srvremoto', 'root', 'diabrasil' );
     $stmt = $pdo->prepare( 'SELECT sat, loja, caixa, ip, disco_usado, status_wan, data_hora_comun_sefaz, iploja FROM '. DATA_CONFIG_BD["cn_tab_comun_sefaz"] .';' );   
     $stmt->execute();
     $results = $stmt->fetchAll( PDO::FETCH_ASSOC );

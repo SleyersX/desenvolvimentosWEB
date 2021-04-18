@@ -7,7 +7,7 @@
     header( 'Content-Transfer-Encoding: binary' );
     header( 'Pragma: no-cache');
 
-    $pdo = new PDO( 'mysql:host=localhost;dbname=srvremoto', 'root', 'diabrasil' );
+    $pdo = new PDO( 'mysql:host=database;dbname=srvremoto', 'root', 'diabrasil' );
     $stmt = $pdo->prepare( 'SELECT sat, loja, caixa, ipsat, disco_usado, iploja FROM '. DATA_CONFIG_BD["cn_tab_disk_used"] .';' );   
     $stmt->execute();
     $results = $stmt->fetchAll( PDO::FETCH_ASSOC );
