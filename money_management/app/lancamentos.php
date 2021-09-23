@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <?php
-use models\DB;
-require_once "../models/connection.php";
-$db = new DB();
+    use models\DB;
+    require_once "../models/connection.php";
+    $db = new DB();
 ?>
 <html lang="en">
 <head>
@@ -36,7 +36,9 @@ $db = new DB();
     <!-- Theme style -->
     <link rel="stylesheet" href="../dist/css/adminlte.min.css">
     <!-- DataTables -->
-    <link rel="stylesheet" href="../plugins/datatables-bs4/css/dataTables.bootstrap4.css">
+    <link rel="stylesheet" href="../plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="../plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+    <link rel="stylesheet" href="../plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="../dist/css/adminlte.min.css">
     <link rel="stylesheet" href="../dist/css/style.css">
@@ -234,7 +236,7 @@ $db = new DB();
                                             <div class="col-12">
                                                 <div class="form-group">
                                                     <label>Observações</label>
-                                                    <textarea class="form-control" rows="7" placeholder="Observações..."></textarea>
+                                                    <textarea class="form-control" rows="5" placeholder="Observações..."></textarea>
                                                 </div>
                                             </div>
                                         </div>
@@ -255,7 +257,7 @@ $db = new DB();
 
                                                 <div class="info-box-content">
                                                     <span class="info-box-text">Saldo Mês Anterior</span>
-                                                    <span class="info-box-number">R$ 1000,00</span>
+                                                    <span class="info-box-number" id="idSaldoMesAnterior">R$ 0,00</span>
                                                 </div>
                                                 <!-- /.info-box-content -->
                                             </div>
@@ -267,7 +269,7 @@ $db = new DB();
 
                                                 <div class="info-box-content">
                                                     <span class="info-box-text">Saldo Mês Atual</span>
-                                                    <span class="info-box-number">R$ 3000,00</span>
+                                                    <span class="info-box-number" id="idSaldoMesAtual">R$ 0,00</span>
                                                 </div>
                                                 <!-- /.info-box-content -->
                                             </div>
@@ -279,7 +281,7 @@ $db = new DB();
 
                                                 <div class="info-box-content">
                                                     <span class="info-box-text">Receitas do Ano</span>
-                                                    <span class="info-box-number">R$ 100000,00</span>
+                                                    <span class="info-box-number" id="idReceitasDoAno">R$ 0,00</span>
                                                 </div>
                                                 <!-- /.info-box-content -->
                                             </div>
@@ -291,7 +293,7 @@ $db = new DB();
 
                                                 <div class="info-box-content">
                                                     <span class="info-box-text">Despesas do Ano</span>
-                                                    <span class="info-box-number">R$ 50000,00</span>
+                                                    <span class="info-box-number" id="idDespesasDoAno">R$ 0,00</span>
                                                 </div>
                                                 <!-- /.info-box-content -->
                                             </div>
@@ -303,7 +305,7 @@ $db = new DB();
 
                                                 <div class="info-box-content">
                                                     <span class="info-box-text">Acumulado Ano</span>
-                                                    <span class="info-box-number">R$ 50000,00</span>
+                                                    <span class="info-box-number" id="idAcumuladoAno">R$ 0,00</span>
                                                 </div>
                                                 <!-- /.info-box-content -->
                                             </div>
@@ -320,7 +322,23 @@ $db = new DB();
                                 </div>
                                 <form>
                                     <div class="card-body">
-
+                                        <div class="table-responsive-sm">
+                                            <table id="tbLancamentos" class="table table-bordered table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Data Lançamento</th>
+                                                        <th>Centro de Custo</th>
+                                                        <th>Classificação</th>
+                                                        <th>Plano de Contas</th>
+                                                        <th>Cliente</th>
+                                                        <th>Status</th>
+                                                        <th>Valor</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="tbBodyLancamentos"></tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </form>
                             </div>
@@ -345,9 +363,6 @@ $db = new DB();
     <!-- ./wrapper -->
 
     <!-- REQUIRED SCRIPTS -->
-    <!-- DataTables -->
-    <script src="../plugins/datatables/jquery.dataTables.js"></script>
-    <script src="../plugins/datatables-bs4/js/dataTables.bootstrap4.js"></script>
     <!-- jQuery -->
     <script src="../plugins/jquery/jquery.min.js"></script>
     <!-- Bootstrap 4 -->
@@ -375,6 +390,19 @@ $db = new DB();
     <script src="../dist/js/adminlte.min.js"></script>
     <!-- AdminLTE for demo purposes -->
     <script src="../dist/js/demo.js"></script>
+    <!-- DataTables  & Plugins -->
+    <script src="../plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="../plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="../plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+    <script src="../plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+    <script src="../plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+    <script src="../plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+    <script src="../plugins/jszip/jszip.min.js"></script>
+    <script src="../plugins/pdfmake/pdfmake.min.js"></script>
+    <script src="../plugins/pdfmake/vfs_fonts.js"></script>
+    <script src="../plugins/datatables-buttons/js/buttons.html5.min.js"></script>
+    <script src="../plugins/datatables-buttons/js/buttons.print.min.js"></script>
+    <script src="../plugins/datatables-buttons/js/buttons.colVis.min.js"></script>
     <!-- Page specific script -->
     <script>
         $(function () {
@@ -386,6 +414,58 @@ $db = new DB();
                 format: 'DD/MM/YYYY'
             })
         })
+    </script>
+    <script type="text/javascript">
+        // Recupera tabela lançamentos
+        $('#tbBodyLancamentos').empty();
+        $.ajax({
+            url: "../controllers/getEntries.php",
+            type: "GET",
+            data : {},
+            dataType: "json",
+            success: function (data) {
+                if(data){
+                    for(let i=0;data.length>i;i++) {
+                        $('#tbBodyLancamentos').append(`<tr><td>${i}</td><td>${data[i].data_lancamento}</td><td>${data[i].cn_custo_descricao}</td><td>${data[i].classificacao}</td><td>${data[i].plano_de_contas}</td><td>${data[i].nome}</td><td>${data[i].status}</td><td>${parseFloat(data[i].valor).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</td></tr>`);
+                    }
+                    $('#tbLancamentos').DataTable({
+                        "retrieve": true,
+                        "reponsive": true,
+                        "paging": true,
+                        "lengthChange": false,
+                        "searching": true,
+                        "ordering": true,
+                        "info": true,
+                        "autoWidth": false,
+                        "pageLength": 5
+                    });
+                }else{
+                    $('#tbLancamentos').DataTable({
+                        //"retrieve": true,
+                        "language": {
+                            "emptyTable": "Sem dados disponiveis atualmente"
+                        }
+                    });
+                }
+            }
+        });
+
+        // Recupera saldos
+        $.ajax({
+            url: "../controllers/getSumMonthPrevious.php",
+            type: "GET",
+            data: "",
+            dataType: "json",
+            success: function (data){
+                if(data){
+                    document.getElementById('idSaldoMesAnterior').innerHTML = parseFloat(data.saldoMesAnterior).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'});
+                    document.getElementById('idSaldoMesAtual').innerHTML = parseFloat(data.saldoMesAtual).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'});
+                    document.getElementById('idReceitasDoAno').innerHTML = parseFloat(data.somaReceitasAno).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'});
+                    document.getElementById('idDespesasDoAno').innerHTML = parseFloat(data.somaDespesasAno).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'});
+                    document.getElementById('idAcumuladoAno').innerHTML = parseFloat(data.saldoAcumuladoAno).toLocaleString('pt-br',{style: 'currency', currency: 'BRL'});
+                }
+            }
+        });
     </script>
 </body>
 </html>
